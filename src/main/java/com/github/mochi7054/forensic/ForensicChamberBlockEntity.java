@@ -95,10 +95,7 @@ public class ForensicChamberBlockEntity extends TileEntityConfigurableMachine im
     protected IInventorySlotHolder getInitialInventory(IContentsListener listener) {
         InventorySlotHelper builder = InventorySlotHelper.forSideWithConfig(this::getDirection, this::getConfig);
 
-        inputSlot = BasicInventorySlot.at(stack -> {
-            MatterCompound compound = ReplicationCalculation.getMatterCompound(stack);
-            return compound != null && !compound.getValues().isEmpty();
-        }, listener, 32, 42);
+        inputSlot = BasicInventorySlot.at(stack -> !stack.isEmpty(), listener, 32, 42);
 
         chipInputSlot = BasicInventorySlot.at(stack -> stack.getItem() instanceof IMatterPatternModifier, listener, 74, 42);
 

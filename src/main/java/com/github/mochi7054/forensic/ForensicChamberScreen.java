@@ -128,6 +128,19 @@ public class ForensicChamberScreen extends GuiConfigurableTile<ForensicChamberBl
                             overlay.getWidth(), overlay.getHeight());
                 }
             }
+
+            // Ghost icon for Memory Chip if chip input slot or chip output slot is empty
+            boolean isChipInput = (this.relativeX == 73 && this.relativeY == 41);
+            boolean isChipOutput = (this.relativeX == 115 && this.relativeY == 41);
+            if ((isChipInput || isChipOutput) && !slot.hasItem()) {
+                com.mojang.blaze3d.systems.RenderSystem.enableBlend();
+                com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc();
+                guiGraphics.setColor(1.0F, 1.0F, 1.0F, 0.4F);
+                guiGraphics.blit(MEMORY_CHIP_GHOST_TEXTURE, this.relativeX + 1, this.relativeY + 1, 0, 0, 16, 16, 16, 16);
+                guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+                com.mojang.blaze3d.systems.RenderSystem.disableBlend();
+            }
+
             this.drawContents(guiGraphics);
         }
     }

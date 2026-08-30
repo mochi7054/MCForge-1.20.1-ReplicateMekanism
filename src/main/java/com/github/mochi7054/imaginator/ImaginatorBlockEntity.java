@@ -676,7 +676,7 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
                 }
 
                 if (!checkStack.isEmpty()) {
-                    MatterCompound recipeCompound = ReplicationCalculation.getMatterCompound(checkStack);
+                    MatterCompound recipeCompound = com.github.mochi7054.collapser.CollapserBlockEntity.getMatterCompoundSafe(checkStack);
                     if (recipeCompound != null && !recipeCompound.getValues().isEmpty()) {
                         boolean allFluidsAvailable = true;
                         for (Map.Entry<IMatterType, MatterValue> entry : recipeCompound.getValues().entrySet()) {

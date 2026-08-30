@@ -114,9 +114,27 @@ public List<SimpleMatterTank> getMatterTanks() {
         return tanks;
     }
 
+    public static MatterCompound getMatterCompoundSafe(ItemStack stack) {
+        if (stack.isEmpty()) return null;
+        try {
+            MatterCompound compound = ReplicationCalculation.getMatterCompound(stack);
+            if (compound != null && !compound.getValues().isEmpty()) {
+                return compound;
+            }
+        } catch (Throwable ignored) {}
+        try {
+            MatterCompound clientCompound = com.buuz135.replication.calculation.client.ClientReplicationCalculation.getMatterCompound(stack);
+            if (clientCompound != null && !clientCompound.getValues().isEmpty()) {
+                return clientCompound;
+            }
+        } catch (Throwable ignored) {}
+        return null;
+    }
+
     public double getProgress(int slotIndex) {
         if (slotIndex >= 0 && slotIndex < operatingTicks.length) {
-            return (double) operatingTicks[slotIndex] / 100.0;
+            int ticks = MekanismUtils.getTicks(this, BASE_TICKS_PER_OPERATION);
+            return (double) operatingTicks[slotIndex] / (double) Math.max(1, ticks);
         }
         return 0.0;
     }
@@ -237,46 +255,83 @@ public List<SimpleMatterTank> getMatterTanks() {
     }
 
     private void processCollapsing() {
-        int speedUpgrades = upgradeComponent != null ? upgradeComponent.getUpgrades(Upgrade.SPEED) : 0;
-        int energyUpgrades = upgradeComponent != null ? upgradeComponent.getUpgrades(Upgrade.ENERGY) : 0;
-
         FloatingLong energyUsage = MekanismUtils.getEnergyPerTick(this, BASE_ENERGY_PER_TICK);
-        int ticksRequired = (int) Math.max(1, BASE_TICKS_PER_OPERATION * Math.pow(0.85, speedUpgrades));
+        int ticksRequired = MekanismUtils.getTicks(this, BASE_TICKS_PER_OPERATION);
+
+        boolean anyOperating = false;
+        boolean wasActive = getActive();
 
         for (int i = 0; i < inputSlots.size(); i++) {
             InputInventorySlot slot = inputSlots.get(i);
             ItemStack stack = slot.getStack();
 
             if (stack.isEmpty()) {
-                operatingTicks[i] = 0;
-                continue;
-            }
-
-            MatterCompound compound = ReplicationCalculation.getMatterCompound(stack);
-            if (compound == null || compound.getValues().isEmpty()) {
-                operatingTicks[i] = 0;
-                continue;
-            }
-
-            if (energyContainer.getEnergy().greaterOrEqual(energyUsage)) {
-                energyContainer.extract(energyUsage, Action.EXECUTE, AutomationType.INTERNAL);
-                operatingTicks[i]++;
-
-                if (operatingTicks[i] >= ticksRequired) {
+                if (operatingTicks[i] > 0) {
                     operatingTicks[i] = 0;
+                    markForSave();
+                }
+                continue;
+            }
 
-                    for (MatterValue value : compound.getValues().values()) {
-                        IMatterType matterType = value.getMatter();
-                        SimpleMatterTank tank = getTankForType(matterType);
-                        if (tank != null) {
-                            tank.fillDouble(value.getAmount(),
-                                    net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+            MatterCompound compound = getMatterCompoundSafe(stack);
+            if (compound == null || compound.getValues().isEmpty()) {
+                if (operatingTicks[i] > 0) {
+                    operatingTicks[i] = 0;
+                    markForSave();
+                }
+                continue;
+            }
+
+            boolean allTanksHaveSpace = true;
+            for (MatterValue value : compound.getValues().values()) {
+                IMatterType matterType = value.getMatter();
+                SimpleMatterTank tank = getTankForType(matterType);
+                if (tank == null || tank.getNeeded() < value.getAmount()) {
+                    allTanksHaveSpace = false;
+                    break;
+                }
+            }
+
+            if (allTanksHaveSpace) {
+                if (energyContainer.getEnergy().greaterOrEqual(energyUsage)) {
+                    energyContainer.extract(energyUsage, Action.EXECUTE, AutomationType.INTERNAL);
+                    operatingTicks[i]++;
+                    anyOperating = true;
+
+                    if (operatingTicks[i] >= ticksRequired) {
+                        operatingTicks[i] = 0;
+
+                        int upgradeCount = upgradeComponent != null ? upgradeComponent.getUpgrades(ReplicateMekanism.REPLICA_UPGRADE_TYPE) : 0;
+                        double multiplier = (double) (1 << upgradeCount);
+
+                        for (MatterValue value : compound.getValues().values()) {
+                            IMatterType matterType = value.getMatter();
+                            SimpleMatterTank tank = getTankForType(matterType);
+                            if (tank != null) {
+                                tank.fillDouble(value.getAmount() * multiplier,
+                                        net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+                            }
                         }
+                        slot.shrinkStack(1, Action.EXECUTE);
+                        markForSave();
                     }
-                    slot.shrinkStack(1, Action.EXECUTE);
+                } else {
+                    if (operatingTicks[i] > 0) {
+                        operatingTicks[i] = Math.max(0, operatingTicks[i] - 2);
+                        markForSave();
+                    }
+                }
+            } else {
+                if (operatingTicks[i] > 0) {
+                    operatingTicks[i] = Math.max(0, operatingTicks[i] - 2);
                     markForSave();
                 }
             }
+        }
+
+        setActive(anyOperating);
+        if (wasActive != getActive()) {
+            markForSave();
         }
     }
 
