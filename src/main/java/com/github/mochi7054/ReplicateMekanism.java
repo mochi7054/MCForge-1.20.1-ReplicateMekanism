@@ -112,13 +112,15 @@ public class ReplicateMekanism {
             PROTOCOL_VERSION::equals
     );
 
+    public static final net.minecraft.network.chat.TextColor CIRCUIT_COLOR = net.minecraft.network.chat.TextColor.fromRgb(0x75FF89);
+
     static {
-        REPLICA_UPGRADE_ITEM = ITEMS.register("replica_upgrade", ReplicaUpgradeItem::new);
-        REPLICA_ALLOY_ITEM = ITEMS.register("replica_alloy", () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()));
-        REPLICA_DUST_ITEM = ITEMS.register("replica_dust", () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()));
-        ENRICHED_REPLICA_ITEM = ITEMS.register("enriched_replica", () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()));
-        REPLICA_CONTROL_CIRCUIT_ITEM = ITEMS.register("replica_control_circuit", () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()));
-        REPLICA_INCOMPLETE_CONTROL_CIRCUIT_ITEM = ITEMS.register("replica_incomplete_control_circuit", () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()));
+        REPLICA_UPGRADE_ITEM = ITEMS.register("replica_upgrade", () -> new ReplicaUpgradeItem(new net.minecraft.world.item.Item.Properties().stacksTo(64), CIRCUIT_COLOR));
+        REPLICA_ALLOY_ITEM = ITEMS.register("replica_alloy", () -> new com.github.mochi7054.item.ColoredNameItem(new net.minecraft.world.item.Item.Properties(), CIRCUIT_COLOR));
+        REPLICA_DUST_ITEM = ITEMS.register("replica_dust", () -> new com.github.mochi7054.item.ColoredNameItem(new net.minecraft.world.item.Item.Properties(), CIRCUIT_COLOR));
+        ENRICHED_REPLICA_ITEM = ITEMS.register("enriched_replica", () -> new com.github.mochi7054.item.ColoredNameItem(new net.minecraft.world.item.Item.Properties(), CIRCUIT_COLOR));
+        REPLICA_CONTROL_CIRCUIT_ITEM = ITEMS.register("replica_control_circuit", () -> new com.github.mochi7054.item.ColoredNameItem(new net.minecraft.world.item.Item.Properties(), CIRCUIT_COLOR));
+        REPLICA_INCOMPLETE_CONTROL_CIRCUIT_ITEM = ITEMS.register("replica_incomplete_control_circuit", () -> new com.github.mochi7054.item.ColoredNameItem(new net.minecraft.world.item.Item.Properties(), CIRCUIT_COLOR));
 
         COLLAPSER_BLOCK = BLOCKS.registerDefaultProperties("collapser",
                 () -> new CollapserBlock(ReplicaTier.STANDARD, BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.5F, 16.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()),
@@ -180,7 +182,7 @@ public class ReplicateMekanism {
         FORENSIC_CHAMBER_TILE = TILE_ENTITY_TYPES.register(FORENSIC_CHAMBER_BLOCK, ForensicChamberBlockEntity::new);
         FORENSIC_CHAMBER_CONTAINER = CONTAINER_TYPES.register("forensic_chamber", ForensicChamberBlockEntity.class, ForensicChamberMenu::new);
 
-        REPLICA_TIER_INSTALLER = ITEMS.register("replica_tier_installer", ReplicaTierInstallerItem::new);
+        REPLICA_TIER_INSTALLER = ITEMS.register("replica_tier_installer", () -> new ReplicaTierInstallerItem(new net.minecraft.world.item.Item.Properties().stacksTo(16), CIRCUIT_COLOR));
 
         REPLICATEMEKANISM_TAB = CREATIVE_MODE_TABS.register("tab", () -> CreativeModeTab.builder()
                 .title(Component.translatable("itemGroup.replicatemekanism"))

@@ -14,9 +14,13 @@ import java.util.List;
 
 public class ReplicaUpgradeItem extends ItemUpgrade {
 
-    private static final TextColor REPLICA_COLOR = TextColor.fromRgb(0x38FF70);
+    private static final TextColor REPLICA_COLOR = TextColor.fromRgb(0x75FF89);
 
     public ReplicaUpgradeItem(Properties properties) {
+        super(ReplicateMekanism.REPLICA_UPGRADE_TYPE, properties);
+    }
+
+    public ReplicaUpgradeItem(Properties properties, TextColor color) {
         super(ReplicateMekanism.REPLICA_UPGRADE_TYPE, properties);
     }
 

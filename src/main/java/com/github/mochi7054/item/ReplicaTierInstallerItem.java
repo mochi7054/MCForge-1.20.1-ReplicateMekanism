@@ -32,7 +32,7 @@ import java.util.List;
 
 public class ReplicaTierInstallerItem extends Item {
 
-    private static final TextColor REPLICA_COLOR = TextColor.fromRgb(0x38FF70);
+    private static final TextColor REPLICA_COLOR = TextColor.fromRgb(0x75FF89);
 
     public ReplicaTierInstallerItem(Properties properties) {
         super(properties);
