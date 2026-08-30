@@ -121,12 +121,25 @@ public List<SimpleMatterTank> getMatterTanks() {
         return 0.0;
     }
 
-    public int getSlotX(int index) {
+        public int getSlotX(int index) {
         ReplicaTier tier = getTier();
-        if (tier == ReplicaTier.STANDARD) return 38;
-        int spacing = 18;
-        int startX = 20;
-        return startX + index * spacing;
+        if (tier == ReplicaTier.STANDARD) return 16;
+        int startX;
+        int gap;
+        if (tier == ReplicaTier.BASIC) {
+            startX = 55;
+            gap = 38;
+        } else if (tier == ReplicaTier.ADVANCED) {
+            startX = 35;
+            gap = 26;
+        } else if (tier == ReplicaTier.ELITE) {
+            startX = 32;
+            gap = 19;
+        } else { // ULTIMATE
+            startX = 30;
+            gap = 19;
+        }
+        return startX + index * gap;
     }
 
     @NotNull
@@ -148,35 +161,66 @@ public List<SimpleMatterTank> getMatterTanks() {
         return builder.build();
     }
 
-        @NotNull
+            @NotNull
     @Override
     protected IInventorySlotHolder getInitialInventory(IContentsListener listener) {
         InventorySlotHelper builder = InventorySlotHelper.forSideWithConfig(this::getDirection, this::getConfig);
 
-        int slotCount = getTier().getSlots();
+        ReplicaTier tier = getTier();
+        int slotCount = tier.getSlots();
         if (this.operatingTicks == null || this.operatingTicks.length != slotCount) {
             this.operatingTicks = new int[slotCount];
         }
 
-        if (this.inputSlots == null) {
-            this.inputSlots = new ArrayList<>();
+        int[][] inputCoords = new int[slotCount][2];
+        int energyX;
+        int energyY;
+        if (tier == ReplicaTier.STANDARD) {
+            inputCoords[0][0] = 16;
+            inputCoords[0][1] = 40;
+            energyX = 141;
+            energyY = 40;
         } else {
-            this.inputSlots.clear();
+            int startX;
+            int gap;
+            if (tier == ReplicaTier.BASIC) {
+                startX = 55;
+                gap = 38;
+            } else if (tier == ReplicaTier.ADVANCED) {
+                startX = 35;
+                gap = 26;
+            } else if (tier == ReplicaTier.ELITE) {
+                startX = 32;
+                gap = 19;
+            } else { // ULTIMATE
+                startX = 30;
+                gap = 19;
+            }
+            for (int i = 0; i < slotCount; i++) {
+                inputCoords[i][0] = startX + i * gap;
+                inputCoords[i][1] = 17;
+            }
+            energyX = 10;
+            energyY = 17;
+        }
+
+        if (inputSlots == null) {
+            inputSlots = new java.util.ArrayList<>();
+        } else {
+            inputSlots.clear();
         }
 
         for (int i = 0; i < slotCount; i++) {
-            int slotX = (slotCount == 1) ? 38 : 20 + i * 18;
-            InputInventorySlot inputSlot = InputInventorySlot.at(
-                    stack -> ReplicationCalculation.getMatterCompound(stack) != null,
-                    listener, slotX, 22
-            );
+            InputInventorySlot inputSlot = InputInventorySlot.at(stack -> {
+                var compound = com.buuz135.replication.calculation.ReplicationCalculation.getMatterCompound(stack);
+                return compound != null && !compound.getValues().isEmpty();
+            }, listener, inputCoords[i][0], inputCoords[i][1]);
             inputSlots.add(inputSlot);
             builder.addSlot(inputSlot);
         }
 
-        energySlot = EnergyInventorySlot.fillOrConvert(energyContainer, this::getLevel, listener, 148, 22);
+        energySlot = EnergyInventorySlot.fillOrConvert(energyContainer, this::getLevel, listener, energyX, energyY);
         builder.addSlot(energySlot);
-
         return builder.build();
     }
 

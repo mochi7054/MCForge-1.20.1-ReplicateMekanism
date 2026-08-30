@@ -116,18 +116,25 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
         return 0.0;
     }
 
-    public int getSlotX(int index) {
+        public int getSlotX(int index) {
         ReplicaTier tier = getTier();
-        if (tier == ReplicaTier.STANDARD) return 74;
-        int spacing = 18;
-        int startX = switch (tier) {
-            case BASIC -> 65;
-            case ADVANCED -> 47;
-            case ELITE -> 29;
-            case ULTIMATE -> 20;
-            default -> 74;
-        };
-        return startX + index * spacing;
+        if (tier == ReplicaTier.STANDARD) return 75;
+        int startX;
+        int gap;
+        if (tier == ReplicaTier.BASIC) {
+            startX = 55;
+            gap = 38;
+        } else if (tier == ReplicaTier.ADVANCED) {
+            startX = 35;
+            gap = 26;
+        } else if (tier == ReplicaTier.ELITE) {
+            startX = 32;
+            gap = 19;
+        } else { // ULTIMATE
+            startX = 30;
+            gap = 19;
+        }
+        return startX + index * gap;
     }
 
             @Override
@@ -249,22 +256,17 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
         return builder.build();
     }
 
-    @NotNull
+        @NotNull
     @Override
     protected IInventorySlotHolder getInitialInventory(IContentsListener listener) {
         InventorySlotHelper builder = InventorySlotHelper.forSideWithConfig(this::getDirection, this::getConfig);
-        ReplicaTier tier = getTierSafe();
-        int slotCount = tier.getSlotCount();
-        this.operatingTicks = new int[slotCount];
-        
-        // Initialize parallel task arrays
-        this.activeTaskUuids = new String[slotCount];
-        this.activeTasks = new com.buuz135.replication.api.task.IReplicationTask[slotCount];
-        this.activeCraftingStacks = new ItemStack[slotCount];
-        for (int i = 0; i < slotCount; i++) {
-            this.activeCraftingStacks[i] = ItemStack.EMPTY;
+
+        ReplicaTier tier = getTier();
+        int slotCount = tier.getSlots();
+        if (this.operatingTicks == null || this.operatingTicks.length != slotCount) {
+            this.operatingTicks = new int[slotCount];
         }
-        
+
         int[][] inputCoords = new int[slotCount][2];
         int[][] outputCoords = new int[slotCount][2];
         int energyX;
@@ -307,19 +309,17 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
         } else {
             inputSlots.clear();
         }
+
+        for (int i = 0; i < slotCount; i++) {
+            InputInventorySlot inputSlot = InputInventorySlot.at(stack -> stack.getItem() instanceof com.buuz135.replication.item.MemoryChipItem, listener, inputCoords[i][0], inputCoords[i][1]);
+            inputSlots.add(inputSlot);
+            builder.addSlot(inputSlot);
+        }
+
         if (outputSlots == null) {
             outputSlots = new java.util.ArrayList<>();
         } else {
             outputSlots.clear();
-        }
-
-        for (int i = 0; i < slotCount; i++) {
-            InputInventorySlot inputSlot = InputInventorySlot.at(stack -> {
-                MatterCompound compound = ReplicationCalculation.getMatterCompound(stack);
-                return compound != null && !compound.getValues().isEmpty();
-            }, listener, inputCoords[i][0], inputCoords[i][1]);
-            inputSlots.add(inputSlot);
-            builder.addSlot(inputSlot);
         }
 
         for (int i = 0; i < slotCount; i++) {

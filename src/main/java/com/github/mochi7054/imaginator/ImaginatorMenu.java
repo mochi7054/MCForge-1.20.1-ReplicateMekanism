@@ -1,6 +1,7 @@
 package com.github.mochi7054.imaginator;
 
 import com.github.mochi7054.ReplicateMekanism;
+import com.github.mochi7054.block.ReplicaTier;
 import mekanism.common.inventory.container.tile.MekanismTileContainer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.entity.player.Inventory;
@@ -24,9 +25,15 @@ public class ImaginatorMenu extends MekanismTileContainer<ImaginatorBlockEntity>
 
     @Override
     protected void addInventorySlots(Inventory playerInventory) {
-        int xOffset = 8;
-        int yOffset = 138;
+        ReplicaTier tier = getTileEntity() != null ? getTileEntity().getTier() : ReplicaTier.STANDARD;
+        int yOffset = tier == ReplicaTier.STANDARD ? 94 : 104;
+        int xOffset = switch (tier) {
+            case STANDARD, BASIC, ADVANCED -> 8;
+            case ELITE -> 10;
+            case ULTIMATE -> 29;
+        };
 
+        // Main Inventory (3 rows of 9 slots)
         for (int row = 0; row < 3; row++) {
             for (int col = 0; col < 9; col++) {
                 int slotIndex = 9 + col + row * 9;
@@ -36,7 +43,8 @@ public class ImaginatorMenu extends MekanismTileContainer<ImaginatorBlockEntity>
             }
         }
 
-        int hotbarY = 196;
+        // Hotbar (9 slots)
+        int hotbarY = tier == ReplicaTier.STANDARD ? 152 : 162;
         for (int col = 0; col < 9; col++) {
             int x = xOffset + col * 18;
             this.addSlot(new mekanism.common.inventory.container.slot.HotBarSlot(playerInventory, col, x, hotbarY));
