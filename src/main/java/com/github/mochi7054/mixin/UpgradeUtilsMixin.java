@@ -18,4 +18,25 @@ public class UpgradeUtilsMixin {
             cir.setReturnValue(new ItemStack(ReplicateMekanism.REPLICA_UPGRADE_ITEM.get(), count));
         }
     }
+
+    @Inject(method = "getInfo", at = @At("HEAD"), cancellable = true)
+    private static void onGetInfo(net.minecraft.world.level.block.entity.BlockEntity tile, Upgrade upgrade, CallbackInfoReturnable<java.util.List<net.minecraft.network.chat.Component>> cir) {
+        if (upgrade == ReplicateMekanism.REPLICA_UPGRADE_TYPE) {
+            java.util.List<net.minecraft.network.chat.Component> info = new java.util.ArrayList<>();
+            int installed = 0;
+            if (tile instanceof mekanism.common.tile.interfaces.IUpgradeTile upgradeTile) {
+                var component = upgradeTile.getComponent();
+                if (component != null) {
+                    installed = component.getUpgrades(ReplicateMekanism.REPLICA_UPGRADE_TYPE);
+                }
+            }
+            
+            int currentMult = 1 << installed;
+            int maxInstalled = upgrade.getMax();
+            int maxMult = 1 << maxInstalled;
+
+            info.add(net.minecraft.network.chat.Component.translatable("upgrade.replicatemekanism.replica.effect", currentMult, maxMult));
+            cir.setReturnValue(info);
+        }
+    }
 }
