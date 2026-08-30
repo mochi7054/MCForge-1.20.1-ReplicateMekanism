@@ -1,0 +1,12 @@
+{
+  "type": "mekanism:infusion_conversion",
+  "input": {
+    "ingredient": {
+      "item": "replicatemekanism:enriched_replica"
+    }
+  },
+  "output": {
+    "amount": 80,
+    "infuse_type": "replicatemekanism:replica"
+  }
+}

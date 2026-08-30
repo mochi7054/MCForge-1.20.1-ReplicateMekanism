@@ -91,10 +91,17 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
         ejectorComponent.setOutputData(configComponent, TransmissionType.ITEM);
     }
 
-    public ReplicaTier getTier() {
-        if (getBlockState().getBlock() instanceof CollapserBlock collapserBlock) {
-            return collapserBlock.getTier();
-        }
+            public ReplicaTier getTier() {
+        try {
+            if (getBlockType() instanceof CollapserBlock collapserBlock) {
+                return collapserBlock.getTier();
+            }
+        } catch (Exception ignored) {}
+        try {
+            if (getBlockState() != null && getBlockState().getBlock() instanceof CollapserBlock collapserBlock) {
+                return collapserBlock.getTier();
+            }
+        } catch (Exception ignored) {}
         return ReplicaTier.STANDARD;
     }
 
@@ -139,17 +146,22 @@ public List<SimpleMatterTank> getMatterTanks() {
         return builder.build();
     }
 
-    @NotNull
+        @NotNull
     @Override
     protected IInventorySlotHolder getInitialInventory(IContentsListener listener) {
         InventorySlotHelper builder = InventorySlotHelper.forSideWithConfig(this::getDirection, this::getConfig);
 
-        int slotCount = 1;
-        if (getBlockState().getBlock() instanceof CollapserBlock collapserBlock) {
-            slotCount = collapserBlock.getTier().getSlots();
+        int slotCount = getTier().getSlots();
+        if (this.operatingTicks == null || this.operatingTicks.length != slotCount) {
+            this.operatingTicks = new int[slotCount];
         }
 
-        inputSlots.clear();
+        if (this.inputSlots == null) {
+            this.inputSlots = new ArrayList<>();
+        } else {
+            this.inputSlots.clear();
+        }
+
         for (int i = 0; i < slotCount; i++) {
             int slotX = (slotCount == 1) ? 38 : 20 + i * 18;
             InputInventorySlot inputSlot = InputInventorySlot.at(

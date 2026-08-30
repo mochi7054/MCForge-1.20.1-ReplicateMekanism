@@ -19,8 +19,7 @@
       "item": "replicatemekanism:collapser_elite"
     }
   },
-  "result": {
-    "id": "replicatemekanism:collapser_ultimate",
+  "result": { "item": "replicatemekanism:collapser_ultimate",
     "count": 1
   }
 }

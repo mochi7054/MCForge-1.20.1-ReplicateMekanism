@@ -1,16 +1,15 @@
 {
   "type": "mekanism:metallurgic_infusing",
-  "chemical_input": {
-    "chemical": "replicatemekanism:replica",
-    "amount": 20
+  "chemicalInput": {
+    "amount": 20,
+    "infuse_type": "replicatemekanism:replica"
   },
-  "item_input": {
-    "count": 1,
-    "item": "minecraft:emerald"
+  "itemInput": {
+    "ingredient": {
+      "item": "mekanism:ultimate_control_circuit"
+    }
   },
   "output": {
-    "count": 1,
-    "id": "replicatemekanism:replica_incomplete_control_circuit"
-  },
-  "per_tick_usage": false
+    "item": "replicatemekanism:replica_incomplete_control_circuit"
+  }
 }

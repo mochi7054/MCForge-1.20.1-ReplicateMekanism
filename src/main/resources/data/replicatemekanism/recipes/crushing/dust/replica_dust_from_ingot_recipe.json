@@ -1,9 +1,11 @@
 {
   "type": "mekanism:crushing",
   "input": {
-    "item": "replication:replica_ingot"
+    "ingredient": {
+      "item": "replication:replica_ingot"
+    }
   },
   "output": {
-    "id": "replicatemekanism:replica_dust"
+    "item": "replicatemekanism:replica_dust"
   }
 }

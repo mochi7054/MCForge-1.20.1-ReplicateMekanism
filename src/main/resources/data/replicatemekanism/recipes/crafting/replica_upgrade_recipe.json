@@ -16,8 +16,7 @@
       "item": "minecraft:glass"
     }
   },
-  "result": {
-    "id": "replicatemekanism:replica_upgrade",
+  "result": { "item": "replicatemekanism:replica_upgrade",
     "count": 1
   }
 }

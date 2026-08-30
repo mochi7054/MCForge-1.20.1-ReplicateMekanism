@@ -129,10 +129,17 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
         return startX + index * spacing;
     }
 
-    public ReplicaTier getTier() {
-        if (getBlockState().getBlock() instanceof ImaginatorBlock imaginatorBlock) {
-            return imaginatorBlock.getTier();
-        }
+            public ReplicaTier getTier() {
+        try {
+            if (getBlockType() instanceof ImaginatorBlock imaginatorBlock) {
+                return imaginatorBlock.getTier();
+            }
+        } catch (Exception ignored) {}
+        try {
+            if (getBlockState() != null && getBlockState().getBlock() instanceof ImaginatorBlock imaginatorBlock) {
+                return imaginatorBlock.getTier();
+            }
+        } catch (Exception ignored) {}
         return ReplicaTier.STANDARD;
     }
 

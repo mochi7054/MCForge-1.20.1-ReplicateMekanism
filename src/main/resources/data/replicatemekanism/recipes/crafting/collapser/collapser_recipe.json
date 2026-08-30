@@ -19,8 +19,7 @@
       "item": "replication:disintegrator"
     }
   },
-  "result": {
-    "id": "replicatemekanism:collapser",
+  "result": { "item": "replicatemekanism:collapser",
     "count": 1
   }
 }

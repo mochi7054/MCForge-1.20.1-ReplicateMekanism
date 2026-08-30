@@ -1,6 +1,6 @@
 {
   "parent": "block/block",
-  "loader": "neoforge:composite",
+  "loader": "forge:composite",
   "textures": {
     "particle": "replicatemekanism:block/imaginator/factory_side_active"
   },
@@ -116,7 +116,7 @@
               "cullface": "north"
             }
           },
-          "neoforge_data": {
+          "forge_data": {
             "block_light": 15,
             "sky_light": 15
           }
@@ -145,7 +145,7 @@
               "texture": "#led"
             }
           },
-          "neoforge_data": {
+          "forge_data": {
             "block_light": 15,
             "sky_light": 15
           }

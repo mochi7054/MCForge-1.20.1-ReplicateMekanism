@@ -1,6 +1,6 @@
 {
   "parent": "block/block",
-  "loader": "neoforge:composite",
+  "loader": "forge:composite",
   "textures": {
     "particle": "replicatemekanism:block/imaginator/standard_side_active"
   },

@@ -11,8 +11,7 @@
       "item": "replicatemekanism:replica_incomplete_control_circuit"
     }
   },
-  "result": {
-    "id": "replicatemekanism:replica_control_circuit",
+  "result": { "item": "replicatemekanism:replica_control_circuit",
     "count": 1
   }
 }

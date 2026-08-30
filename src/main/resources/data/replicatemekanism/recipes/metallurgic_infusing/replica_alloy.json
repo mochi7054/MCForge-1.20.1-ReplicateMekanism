@@ -1,16 +1,15 @@
 {
   "type": "mekanism:metallurgic_infusing",
-  "chemical_input": {
-    "chemical": "replicatemekanism:replica",
-    "amount": 10
+  "chemicalInput": {
+    "amount": 10,
+    "infuse_type": "replicatemekanism:replica"
   },
-  "item_input": {
-    "count": 1,
-    "item": "mekanism:alloy_atomic"
+  "itemInput": {
+    "ingredient": {
+      "item": "mekanism:alloy_atomic"
+    }
   },
   "output": {
-    "count": 1,
-    "id": "replicatemekanism:replica_alloy"
-  },
-  "per_tick_usage": false
+    "item": "replicatemekanism:replica_alloy"
+  }
 }

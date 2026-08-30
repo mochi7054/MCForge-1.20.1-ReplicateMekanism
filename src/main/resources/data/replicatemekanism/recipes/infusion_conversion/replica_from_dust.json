@@ -1,11 +1,12 @@
 {
-  "type": "mekanism:enriching",
+  "type": "mekanism:infusion_conversion",
   "input": {
     "ingredient": {
       "item": "replicatemekanism:replica_dust"
     }
   },
   "output": {
-    "item": "replicatemekanism:enriched_replica"
+    "amount": 10,
+    "infuse_type": "replicatemekanism:replica"
   }
 }

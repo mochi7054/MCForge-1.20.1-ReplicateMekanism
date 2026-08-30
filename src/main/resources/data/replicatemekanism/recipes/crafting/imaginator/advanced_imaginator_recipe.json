@@ -19,8 +19,7 @@
       "item": "replicatemekanism:imaginator_basic"
     }
   },
-  "result": {
-    "id": "replicatemekanism:imaginator_advanced",
+  "result": { "item": "replicatemekanism:imaginator_advanced",
     "count": 1
   }
 }

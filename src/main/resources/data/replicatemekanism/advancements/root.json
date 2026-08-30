@@ -1,7 +1,7 @@
 {
   "display": {
     "icon": {
-      "id": "replication:replica_ingot"
+      "item": "replication:replica_ingot"
     },
     "title": {
       "translate": "advancements.replicatemekanism.root.title"

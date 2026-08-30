@@ -19,8 +19,7 @@
       "item": "replicatemekanism:collapser_basic"
     }
   },
-  "result": {
-    "id": "replicatemekanism:collapser_advanced",
+  "result": { "item": "replicatemekanism:collapser_advanced",
     "count": 1
   }
 }

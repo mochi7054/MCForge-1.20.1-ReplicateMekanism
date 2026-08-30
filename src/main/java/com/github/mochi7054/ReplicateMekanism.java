@@ -56,6 +56,11 @@ public class ReplicateMekanism {
 
     public static Upgrade REPLICA_UPGRADE_TYPE;
     public static final ItemRegistryObject<ReplicaUpgradeItem> REPLICA_UPGRADE_ITEM;
+    public static final ItemRegistryObject<net.minecraft.world.item.Item> REPLICA_ALLOY_ITEM;
+    public static final ItemRegistryObject<net.minecraft.world.item.Item> REPLICA_DUST_ITEM;
+    public static final ItemRegistryObject<net.minecraft.world.item.Item> ENRICHED_REPLICA_ITEM;
+    public static final ItemRegistryObject<net.minecraft.world.item.Item> REPLICA_CONTROL_CIRCUIT_ITEM;
+    public static final ItemRegistryObject<net.minecraft.world.item.Item> REPLICA_INCOMPLETE_CONTROL_CIRCUIT_ITEM;
 
     public static final BlockRegistryObject<CollapserBlock, CollapserBlockItem> COLLAPSER_BLOCK;
     public static final TileEntityTypeRegistryObject<CollapserBlockEntity> COLLAPSER_TILE;
@@ -109,6 +114,11 @@ public class ReplicateMekanism {
 
     static {
         REPLICA_UPGRADE_ITEM = ITEMS.register("replica_upgrade", ReplicaUpgradeItem::new);
+        REPLICA_ALLOY_ITEM = ITEMS.register("replica_alloy", () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()));
+        REPLICA_DUST_ITEM = ITEMS.register("replica_dust", () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()));
+        ENRICHED_REPLICA_ITEM = ITEMS.register("enriched_replica", () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()));
+        REPLICA_CONTROL_CIRCUIT_ITEM = ITEMS.register("replica_control_circuit", () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()));
+        REPLICA_INCOMPLETE_CONTROL_CIRCUIT_ITEM = ITEMS.register("replica_incomplete_control_circuit", () -> new net.minecraft.world.item.Item(new net.minecraft.world.item.Item.Properties()));
 
         COLLAPSER_BLOCK = BLOCKS.registerDefaultProperties("collapser",
                 () -> new CollapserBlock(ReplicaTier.STANDARD, BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.5F, 16.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()),
@@ -177,6 +187,11 @@ public class ReplicateMekanism {
                 .displayItems((parameters, output) -> {
                     output.accept(REPLICA_UPGRADE_ITEM.get());
                     output.accept(REPLICA_TIER_INSTALLER.get());
+                    output.accept(REPLICA_ALLOY_ITEM.get());
+                    output.accept(REPLICA_DUST_ITEM.get());
+                    output.accept(ENRICHED_REPLICA_ITEM.get());
+                    output.accept(REPLICA_CONTROL_CIRCUIT_ITEM.get());
+                    output.accept(REPLICA_INCOMPLETE_CONTROL_CIRCUIT_ITEM.get());
 
                     output.accept(COLLAPSER_BLOCK.getBlock().asItem());
                     output.accept(COLLAPSER_BASIC_BLOCK.getBlock().asItem());

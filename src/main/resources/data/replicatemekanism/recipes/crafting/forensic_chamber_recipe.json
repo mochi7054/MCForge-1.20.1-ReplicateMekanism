@@ -1,4 +1,4 @@
-﻿{
+{
   "type": "minecraft:crafting_shaped",
   "pattern": [
     "LCL",
@@ -19,8 +19,7 @@
       "item": "replication:identification_chamber"
     }
   },
-  "result": {
-    "id": "replicatemekanism:forensic_chamber",
+  "result": { "item": "replicatemekanism:forensic_chamber",
     "count": 1
   }
 }
