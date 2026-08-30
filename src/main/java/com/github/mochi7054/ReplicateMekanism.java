@@ -221,7 +221,7 @@ public class ReplicateMekanism {
         CREATIVE_MODE_TABS.register(modEventBus);
         RMChemical.INFUSE_TYPES.register(modEventBus);
 
-        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Config.SPEC, "replicatemekanism.toml");
 
         modEventBus.addListener(this::commonSetup);
         MinecraftForge.EVENT_BUS.register(this);
