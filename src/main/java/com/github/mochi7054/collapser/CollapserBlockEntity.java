@@ -378,7 +378,7 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
             for (MatterValue value : compound.getValues().values()) {
                 IMatterType matterType = value.getMatter();
                 SimpleMatterTank tank = getTankForType(matterType);
-                if (tank == null || tank.getNeeded() < value.getAmount()) {
+                if (tank == null || tank.getNeeded() < value.getAmount() - 0.0001) {
                     allTanksHaveSpace = false;
                     if (level != null && level.getGameTime() % 40 == 0) {
                         ReplicateMekanism.LOGGER.info("Collapser slot {}: tank for {} is full! needed={}", i, matterType.getName(), tank != null ? tank.getNeeded() : -1);
