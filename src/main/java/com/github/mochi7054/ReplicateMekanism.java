@@ -228,14 +228,26 @@ public class ReplicateMekanism {
         MinecraftForge.EVENT_BUS.register(this);
     }
 
+    @net.minecraftforge.eventbus.api.SubscribeEvent
+    public void onPlayerLoggedIn(net.minecraftforge.event.entity.player.PlayerEvent.PlayerLoggedInEvent event) {
+        if (event.getEntity() instanceof ServerPlayer player) {
+            checkAndAwardCheatedAdvancement(player);
+        }
+    }
+
     public static void checkAndAwardCheatedAdvancement(ServerPlayer player) {
         if (player == null) return;
-        var adv = player.server.getAdvancements().getAdvancement(new ResourceLocation(MODID, "cheat"));
-        if (adv != null) {
-            var progress = player.getAdvancements().getOrStartProgress(adv);
-            if (!progress.isDone()) {
-                for (String criteria : progress.getRemainingCriteria()) {
-                    player.getAdvancements().award(adv, criteria);
+        if (com.github.mochi7054.config.Config.getReplicaUpgradeMaxStack() != 1) {
+            var server = player.getServer();
+            if (server != null) {
+                var adv = server.getAdvancements().getAdvancement(new ResourceLocation(MODID, "cheated_replica_upgrade"));
+                if (adv != null) {
+                    var progress = player.getAdvancements().getOrStartProgress(adv);
+                    if (!progress.isDone()) {
+                        for (String criterion : progress.getRemainingCriteria()) {
+                            player.getAdvancements().award(adv, criterion);
+                        }
+                    }
                 }
             }
         }
