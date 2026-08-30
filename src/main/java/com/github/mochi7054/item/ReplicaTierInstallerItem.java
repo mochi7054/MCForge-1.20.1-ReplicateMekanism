@@ -97,10 +97,11 @@ public class ReplicaTierInstallerItem extends Item {
         }
 
         Direction facing = Direction.NORTH;
-        if (state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
-            facing = state.getValue(BlockStateProperties.HORIZONTAL_FACING);
-        } else if (state.hasProperty(BlockStateProperties.FACING)) {
-            facing = state.getValue(BlockStateProperties.FACING);
+        for (net.minecraft.world.level.block.state.properties.Property<?> property : state.getProperties()) {
+            if (property instanceof net.minecraft.world.level.block.state.properties.DirectionProperty dirProp) {
+                facing = state.getValue(dirProp);
+                break;
+            }
         }
 
         Block targetBlock;
@@ -113,15 +114,22 @@ public class ReplicaTierInstallerItem extends Item {
         }
 
         BlockState newState = targetBlock.defaultBlockState();
-        if (newState.hasProperty(BlockStateProperties.HORIZONTAL_FACING)) {
-            newState = newState.setValue(BlockStateProperties.HORIZONTAL_FACING, facing);
-        } else if (newState.hasProperty(BlockStateProperties.FACING)) {
-            newState = newState.setValue(BlockStateProperties.FACING, facing);
+        for (net.minecraft.world.level.block.state.properties.Property<?> property : newState.getProperties()) {
+            if (property instanceof net.minecraft.world.level.block.state.properties.DirectionProperty dirProp) {
+                if (dirProp.getPossibleValues().contains(facing)) {
+                    newState = newState.setValue(dirProp, facing);
+                } else if (facing.getAxis().isHorizontal() && dirProp.getPossibleValues().contains(facing)) {
+                    newState = newState.setValue(dirProp, facing);
+                }
+            }
         }
 
         level.setBlockAndUpdate(pos, newState);
 
         BlockEntity newTile = level.getBlockEntity(pos);
+        if (newTile instanceof mekanism.common.tile.base.TileEntityMekanism mekTile) {
+            mekTile.setFacing(facing);
+        }
         if (newTile != null) {
             final List<ItemStack> uninsertedItems = new ArrayList<>();
             newTile.getCapability(ForgeCapabilities.ITEM_HANDLER).ifPresent(newHandler -> {
@@ -145,8 +153,6 @@ public class ReplicaTierInstallerItem extends Item {
 
             newTile.setChanged();
         }
-
-        level.playSound(null, pos, SoundEvents.ANVIL_USE, SoundSource.BLOCKS, 1.0f, 1.0f);
 
         if (player != null && !player.isCreative()) {
             context.getItemInHand().shrink(1);
