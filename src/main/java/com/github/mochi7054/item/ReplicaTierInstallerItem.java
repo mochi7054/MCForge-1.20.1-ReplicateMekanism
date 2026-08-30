@@ -176,6 +176,6 @@ public class ReplicaTierInstallerItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, level, tooltipComponents, tooltipFlag);
-        tooltipComponents.add(Component.translatable("description.replicatemekanism.replica_tier_installer"));
+        tooltipComponents.add(Component.translatable("tooltip.replicatemekanism.replica_tier_installer").withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 }
