@@ -33,7 +33,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class ForensicChamberBlockEntity extends TileEntityConfigurableMachine implements Nameable {
+public class ForensicChamberBlockEntity extends TileEntityConfigurableMachine implements Nameable, mekanism.common.tile.interfaces.IUpgradeTile {
 
     public static final FloatingLong SCAN_ENERGY_COST = FloatingLong.createConst(10_000);
     public static final FloatingLong MAX_ENERGY = FloatingLong.createConst(40_000);
@@ -43,9 +43,13 @@ public class ForensicChamberBlockEntity extends TileEntityConfigurableMachine im
     public BasicInventorySlot chipInputSlot;
     public OutputInventorySlot chipOutputSlot;
     public EnergyInventorySlot energySlot;
+    private final mekanism.common.tile.component.TileComponentUpgrade upgradeComponent;
 
     public ForensicChamberBlockEntity(BlockPos pos, BlockState state) {
         super(ReplicateMekanism.FORENSIC_CHAMBER_BLOCK, pos, state);
+        upgradeComponent = new mekanism.common.tile.component.TileComponentUpgrade(this);
+        upgradeComponent.setSupported(mekanism.api.Upgrade.ENERGY);
+        if (ReplicateMekanism.REPLICA_UPGRADE_TYPE != null) upgradeComponent.setSupported(ReplicateMekanism.REPLICA_UPGRADE_TYPE);
 
         configComponent = new TileComponentConfig(this, TransmissionType.ITEM, TransmissionType.ENERGY);
         ejectorComponent = new TileComponentEjector(this);
@@ -58,6 +62,11 @@ public class ForensicChamberBlockEntity extends TileEntityConfigurableMachine im
 
     @NotNull
     @Override
+    public mekanism.common.tile.component.TileComponentUpgrade getComponent() { return upgradeComponent; }
+
+    @Override
+    public void recalculateUpgrades(mekanism.api.Upgrade upgrade) { super.recalculateUpgrades(upgrade); }
+
     public Component getName() {
         return Component.translatable("container.replicatemekanism.forensic_chamber");
     }

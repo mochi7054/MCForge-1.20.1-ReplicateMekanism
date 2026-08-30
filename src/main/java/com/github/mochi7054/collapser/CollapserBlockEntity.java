@@ -45,7 +45,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class CollapserBlockEntity extends TileEntityConfigurableMachine implements MenuProvider {
+public class CollapserBlockEntity extends TileEntityConfigurableMachine implements MenuProvider, mekanism.common.tile.interfaces.IUpgradeTile {
 
     public static final FloatingLong BASE_ENERGY_PER_TICK = FloatingLong.createConst(100);
     public static final int BASE_TICKS_PER_OPERATION = 100;

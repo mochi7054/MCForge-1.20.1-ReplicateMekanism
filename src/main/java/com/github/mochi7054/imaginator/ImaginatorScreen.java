@@ -1,28 +1,21 @@
 package com.github.mochi7054.imaginator;
 
-import com.github.mochi7054.ReplicateMekanism;
 import com.github.mochi7054.block.ReplicaTier;
 import com.github.mochi7054.client.gui.ReplicationGuiFluidBar;
 import com.github.mochi7054.client.gui.ReplicationGuiVerticalPowerBar;
-import com.github.mochi7054.fluid.SimpleMatterTank;
+import com.github.mochi7054.network.ToggleAutoSortPacket;
 import mekanism.client.gui.GuiConfigurableTile;
 import mekanism.client.gui.element.slot.GuiSlot;
 import mekanism.client.gui.element.slot.SlotType;
 import mekanism.client.gui.element.tab.GuiEnergyTab;
-import mekanism.client.gui.element.tab.GuiRedstoneControlTab;
-import mekanism.client.gui.element.tab.GuiSecurityTab;
-import mekanism.client.gui.element.tab.window.GuiUpgradeWindowTab;
 import mekanism.common.inventory.container.slot.ContainerSlotType;
 import mekanism.common.inventory.container.slot.InventoryContainerSlot;
 import mekanism.common.tile.component.config.DataType;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
-
-import java.util.List;
 
 public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity, ImaginatorMenu> {
 
@@ -35,18 +28,18 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         super(menu, playerInventory, title);
         ReplicaTier tier = menu.getTileEntity().getTier();
         this.imageWidth = switch (tier) {
-            case STANDARD -> 195;
-            case BASIC, ADVANCED, ELITE -> 213;
-            case ULTIMATE -> 231;
+            case STANDARD, BASIC, ADVANCED -> 174;
+            case ELITE -> 180;
+            case ULTIMATE -> 218;
         };
-        this.imageHeight = tier == ReplicaTier.STANDARD ? 172 : 182;
+        this.imageHeight = tier == ReplicaTier.STANDARD ? 174 : 184;
         this.inventoryLabelX = switch (tier) {
             case STANDARD, BASIC, ADVANCED -> 8;
             case ELITE -> 10;
             case ULTIMATE -> 29;
         };
-        this.inventoryLabelY = tier == ReplicaTier.STANDARD ? 78 : 88;
-        this.titleLabelY = 5;
+        this.inventoryLabelY = tier == ReplicaTier.STANDARD ? 82 : 92;
+        this.titleLabelY = tier == ReplicaTier.STANDARD ? 10 : 7;
         this.dynamicSlots = true;
     }
 
@@ -56,36 +49,50 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         ImaginatorBlockEntity tile = menu.getTileEntity();
         ReplicaTier tier = tile.getTier();
 
+        if (tier == ReplicaTier.STANDARD) {
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.earthTank, 8, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.netherTank, 16, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.organicTank, 24, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.enderTank, 32, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.metallicTank, 40, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.preciousTank, 48, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.livingTank, 56, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.quantumTank, 64, 25, 5, 42, false));
+
+            this.addRenderableWidget(new ReplicationGuiVerticalPowerBar(this, tile.energyContainer, 162, 25, 42));
+            this.addRenderableWidget(new ReplicationGuiProgress(() -> tile.getProgress(0), this, 95, 41));
+        } else {
+            int fluidStartX = (this.imageWidth - 142) / 2;
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.earthTank, fluidStartX, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.netherTank, fluidStartX + 18, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.organicTank, fluidStartX + 36, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.enderTank, fluidStartX + 54, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.metallicTank, fluidStartX + 72, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.preciousTank, fluidStartX + 90, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.livingTank, fluidStartX + 108, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.quantumTank, fluidStartX + 126, 84, 16, 5, true));
+
+            this.addRenderableWidget(new ReplicationGuiVerticalPowerBar(this, tile.energyContainer, this.imageWidth - 12, 25, 42));
+
+            for (int i = 0; i < tile.getTier().getSlotCount(); i++) {
+                final int idx = i;
+                int arrowX = tile.getSlotX(i) + 5;
+                this.addRenderableWidget(new ReplicationGuiProgressDown(() -> tile.getProgress(idx), this, arrowX, 39));
+            }
+        }
+
         this.addRenderableWidget(new GuiEnergyTab(this, tile.energyContainer, () -> true));
-        
-        
-        
 
         if (tier != ReplicaTier.STANDARD) {
             this.addRenderableWidget(new GuiImaginatorSortingTab(this, tile));
         }
 
-        int pBarX = this.imageWidth - 12;
-        this.addRenderableWidget(new ReplicationGuiVerticalPowerBar(this, tile.energyContainer, pBarX, 17, 50));
-
-        int slotCount = tile.inputSlots.size();
-        for (int i = 0; i < slotCount; i++) {
-            final int index = i;
-            if (tier == ReplicaTier.STANDARD) {
-                this.addRenderableWidget(new ReplicationGuiProgress(
-                        () -> tile.getProgress(index), this, 102, 42));
-            } else {
-                int arrowX = tile.getSlotX(i) + 5;
-                this.addRenderableWidget(new ReplicationGuiProgressDown(
-                        () -> tile.getProgress(index), this, arrowX, 40));
+        for (net.minecraft.client.gui.components.events.GuiEventListener listener : this.children()) {
+            if (listener instanceof mekanism.client.gui.element.GuiElement element) {
+                if (element.getClass().getName().contains("GuiSideHolder") && element.getRelativeX() < 0 && element.getRelativeY() < 10) {
+                    element.visible = false;
+                }
             }
-        }
-
-        List<SimpleMatterTank> tanks = tile.getMatterTanks();
-        for (int i = 0; i < tanks.size(); i++) {
-            SimpleMatterTank tank = tanks.get(i);
-            int barY = 17 + i * 7;
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tank, 8, barY, 44, 6, false));
         }
     }
 
@@ -102,8 +109,8 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
                 if (dataType != null) {
                     type = SlotType.get(dataType);
                 } else if (slotType == ContainerSlotType.INPUT ||
-                        slotType == ContainerSlotType.OUTPUT ||
-                        slotType == ContainerSlotType.EXTRA) {
+                           slotType == ContainerSlotType.OUTPUT ||
+                           slotType == ContainerSlotType.EXTRA) {
                     type = SlotType.NORMAL;
                 } else if (slotType == ContainerSlotType.POWER) {
                     type = SlotType.POWER;
@@ -111,15 +118,31 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
                     type = SlotType.NORMAL;
                 }
 
-                int x = slot.x - 1;
-                int y = slot.y - 1;
+                GuiSlot guiSlot = new ReplicationGuiSlot(type, this, slot.x - 1, slot.y - 1, containerSlot);
 
-                this.addRenderableWidget(new ReplicationGuiSlot(type, this, x, y, slot));
+                boolean isPlayerSlot = slot instanceof mekanism.common.inventory.container.slot.MainInventorySlot ||
+                                       slot instanceof mekanism.common.inventory.container.slot.HotBarSlot;
+
+                if (!isPlayerSlot && (slotType == ContainerSlotType.IGNORED ||
+                    containerSlot instanceof mekanism.common.inventory.container.slot.VirtualInventoryContainerSlot)) {
+                    guiSlot.visible = false;
+                }
+
+                containerSlot.addWarnings(guiSlot);
+                mekanism.common.inventory.container.slot.SlotOverlay overlay = containerSlot.getSlotOverlay();
+                if (overlay != null) {
+                    guiSlot.with(overlay);
+                }
+
+                this.addRenderableWidget(guiSlot);
+            } else {
+                GuiSlot guiSlot = new ReplicationGuiSlot(SlotType.NORMAL, this, slot.x - 1, slot.y - 1, slot);
+                this.addRenderableWidget(guiSlot);
             }
         }
     }
 
-        private static class ReplicationGuiSlot extends GuiSlot {
+    private static class ReplicationGuiSlot extends GuiSlot {
         private final Slot slot;
 
         public ReplicationGuiSlot(SlotType type, mekanism.client.gui.IGuiWrapper gui, int x, int y, Slot slot) {
@@ -128,26 +151,22 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         }
 
         @Override
-        public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-            this.customDraw(guiGraphics);
-        }
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
 
-        private void customDraw(GuiGraphics guiGraphics) {
+        @Override
+        public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
             guiGraphics.blit(CUSTOM_SLOT_TEXTURE, this.relativeX, this.relativeY, 0, 0, 18, 18, 18, 18);
-            
             if (slot instanceof InventoryContainerSlot containerSlot) {
                 mekanism.common.inventory.container.slot.SlotOverlay overlay = containerSlot.getSlotOverlay();
                 if (overlay != null) {
                     guiGraphics.blit(overlay.getTexture(), this.relativeX, this.relativeY, 0.0F, 0.0F, overlay.getWidth(), overlay.getHeight(), overlay.getWidth(), overlay.getHeight());
                 }
             }
-            
             this.drawContents(guiGraphics);
         }
     }
 
-        private static class ReplicationGuiProgress extends mekanism.client.gui.element.GuiElement {
-        @Override public void renderWidget(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+    private static class ReplicationGuiProgress extends mekanism.client.gui.element.GuiElement {
         private final java.util.function.DoubleSupplier progressSupplier;
 
         public ReplicationGuiProgress(java.util.function.DoubleSupplier progressSupplier, mekanism.client.gui.IGuiWrapper gui, int x, int y) {
@@ -156,7 +175,13 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         }
 
         @Override
-        public void drawBackground(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+
+        @Override
+        public void updateWidgetNarration(net.minecraft.client.gui.narration.NarrationElementOutput output) {}
+
+        @Override
+        public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
             guiGraphics.blit(REPLICATION_BACKGROUND, this.relativeX, this.relativeY, 177, 61, 22, 15, 256, 256);
             double progress = progressSupplier.getAsDouble();
             if (progress > 0) {
@@ -166,13 +191,9 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
                 }
             }
         }
-
-        @Override
-        public void updateWidgetNarration(NarrationElementOutput output) {}
     }
 
-        private static class ReplicationGuiProgressDown extends mekanism.client.gui.element.GuiElement {
-        @Override public void renderWidget(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+    private static class ReplicationGuiProgressDown extends mekanism.client.gui.element.GuiElement {
         private final java.util.function.DoubleSupplier progressSupplier;
 
         public ReplicationGuiProgressDown(java.util.function.DoubleSupplier progressSupplier, mekanism.client.gui.IGuiWrapper gui, int x, int y) {
@@ -181,7 +202,13 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         }
 
         @Override
-        public void drawBackground(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+
+        @Override
+        public void updateWidgetNarration(net.minecraft.client.gui.narration.NarrationElementOutput output) {}
+
+        @Override
+        public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
             guiGraphics.blit(PROGRESS_DOWN_TEXTURE, this.relativeX, this.relativeY, 0, 0, 8, 15, 16, 15);
             double progress = progressSupplier.getAsDouble();
             if (progress > 0) {
@@ -191,12 +218,9 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
                 }
             }
         }
-
-        @Override
-        public void updateWidgetNarration(NarrationElementOutput output) {}
     }
 
-    private void drawMachineArea(net.minecraft.client.gui.GuiGraphics guiGraphics, int x, int y, int width, boolean standard) {
+    private void drawMachineArea(GuiGraphics guiGraphics, int x, int y, int width, boolean standard) {
         if (standard) {
             guiGraphics.blit(REPLICATION_BACKGROUND, x, y, 0, 0, width, 88);
         } else {
@@ -224,7 +248,7 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         }
     }
 
-    private void drawInventoryArea(net.minecraft.client.gui.GuiGraphics guiGraphics, int left, int top, int width, int xOffset) {
+    private void drawInventoryArea(GuiGraphics guiGraphics, int left, int top, int width, int xOffset) {
         guiGraphics.blit(REPLICATION_BACKGROUND, left, top, 0, 96, 6, 4);
         for (int x = 6; x < width - 6; x++) {
             guiGraphics.blit(REPLICATION_BACKGROUND, left + x, top, 150, 96, 1, 4);
@@ -253,20 +277,18 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
     }
 
     @Override
-    protected void renderBg(net.minecraft.client.gui.GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
+    protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
         mekanism.client.render.MekanismRenderer.resetColor(guiGraphics);
-        if (this.getXSize() < 8 || this.getYSize() < 8) {
-            return;
-        }
+        if (this.getXSize() < 8 || this.getYSize() < 8) return;
         ReplicaTier tier = menu.getTileEntity().getTier();
         boolean standard = tier == ReplicaTier.STANDARD;
-        
+
         int xOffset = switch (tier) {
             case STANDARD, BASIC, ADVANCED -> 8;
             case ELITE -> 10;
             case ULTIMATE -> 29;
         };
-        
+
         drawMachineArea(guiGraphics, this.leftPos, this.topPos, this.imageWidth, standard);
         drawInventoryArea(guiGraphics, this.leftPos, this.topPos + (standard ? 88 : 98), this.imageWidth, xOffset);
     }
@@ -280,24 +302,16 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         super.drawForegroundText(graphics, mouseX, mouseY);
     }
 
-        private static class GuiImaginatorSortingTab extends mekanism.client.gui.element.GuiInsetElement<ImaginatorBlockEntity> {
-        @Override
-        public void updateWidgetNarration(NarrationElementOutput output) {}
-
-        @Override
-        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-            drawBackground(guiGraphics, mouseX, mouseY, partialTicks);
-        }
-
+    private static class GuiImaginatorSortingTab extends mekanism.client.gui.element.GuiInsetElement<ImaginatorBlockEntity> {
         public GuiImaginatorSortingTab(mekanism.client.gui.IGuiWrapper gui, ImaginatorBlockEntity tile) {
             super(SORTING_ICON, gui, tile, -26, 62, 35, 18, true);
         }
 
         @Override
-        public void renderToolTip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-            super.renderToolTip(guiGraphics, mouseX, mouseY);
-            this.displayTooltips(guiGraphics, mouseX, mouseY, Component.translatable("gui.replicatemekanism.task_sharing"));
-        }
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+
+        @Override
+        public void updateWidgetNarration(net.minecraft.client.gui.narration.NarrationElementOutput output) {}
 
         @Override
         protected void colorTab(GuiGraphics guiGraphics) {
@@ -308,13 +322,19 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
             super.drawBackground(guiGraphics, mouseX, mouseY, partialTicks);
             Component stateText = mekanism.common.util.text.BooleanStateDisplay.OnOff.of(dataSource.sorting).getTextComponent();
-            this.drawTextScaledBound(guiGraphics, stateText, this.relativeX + 3, this.relativeY + 24, this.titleTextColor(), 21.0f);
+            drawTextScaledBound(guiGraphics, stateText, this.relativeX + 3, this.relativeY + 24, this.titleTextColor(), 21.0F);
+        }
+
+        @Override
+        public void renderToolTip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
+            super.renderToolTip(guiGraphics, mouseX, mouseY);
+            this.displayTooltips(guiGraphics, mouseX, mouseY, mekanism.common.MekanismLang.AUTO_SORT.translate());
         }
 
         @Override
         public void onClick(double mouseX, double mouseY, int button) {
-            ReplicateMekanism.PACKET_HANDLER.sendToServer(
-                new com.github.mochi7054.network.ToggleAutoSortPacket(dataSource.getBlockPos())
+            com.github.mochi7054.ReplicateMekanism.PACKET_HANDLER.sendToServer(
+                new ToggleAutoSortPacket(dataSource.getBlockPos())
             );
         }
     }

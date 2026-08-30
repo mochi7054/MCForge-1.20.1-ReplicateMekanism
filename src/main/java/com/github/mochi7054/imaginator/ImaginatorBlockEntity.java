@@ -48,7 +48,7 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class ImaginatorBlockEntity extends TileEntityConfigurableMachine implements MenuProvider {
+public class ImaginatorBlockEntity extends TileEntityConfigurableMachine implements MenuProvider, mekanism.common.tile.interfaces.IUpgradeTile {
 
     public static final int BASE_TICKS_REQUIRED = 100;
     public static final mekanism.api.math.FloatingLong BASE_ENERGY_USAGE = mekanism.api.math.FloatingLong.createConst(50);
@@ -63,6 +63,7 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
 
     // Parallel task variables (active if sorting is true)
     public boolean sorting = false;
+    private final mekanism.common.tile.component.TileComponentUpgrade upgradeComponent;
     public String[] activeTaskUuids;
     public com.buuz135.replication.api.task.IReplicationTask[] activeTasks;
     public ItemStack[] activeCraftingStacks;
@@ -129,7 +130,13 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
         return startX + index * spacing;
     }
 
-            public ReplicaTier getTier() {
+            @Override
+    public mekanism.common.tile.component.TileComponentUpgrade getComponent() { return upgradeComponent; }
+
+    @Override
+    public void recalculateUpgrades(Upgrade upgrade) { super.recalculateUpgrades(upgrade); }
+
+    public ReplicaTier getTier() {
         try {
             if (getBlockType() instanceof ImaginatorBlock imaginatorBlock) {
                 return imaginatorBlock.getTier();
@@ -170,6 +177,10 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
 
     public ImaginatorBlockEntity(BlockPos pos, BlockState state) {
         super(getProvider(state), pos, state);
+        upgradeComponent = new mekanism.common.tile.component.TileComponentUpgrade(this);
+        upgradeComponent.setSupported(Upgrade.SPEED);
+        upgradeComponent.setSupported(Upgrade.ENERGY);
+        if (ReplicateMekanism.REPLICA_UPGRADE_TYPE != null) upgradeComponent.setSupported(ReplicateMekanism.REPLICA_UPGRADE_TYPE);
         configComponent = new mekanism.common.tile.component.TileComponentConfig(this, mekanism.common.lib.transmitter.TransmissionType.ITEM, mekanism.common.lib.transmitter.TransmissionType.ENERGY, mekanism.common.lib.transmitter.TransmissionType.FLUID);
         
         // ITEM config: all input slots and output slots

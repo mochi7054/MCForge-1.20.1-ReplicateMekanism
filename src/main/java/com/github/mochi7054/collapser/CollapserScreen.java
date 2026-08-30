@@ -1,45 +1,45 @@
 package com.github.mochi7054.collapser;
 
-import com.github.mochi7054.ReplicateMekanism;
 import com.github.mochi7054.block.ReplicaTier;
 import com.github.mochi7054.client.gui.ReplicationGuiFluidBar;
 import com.github.mochi7054.client.gui.ReplicationGuiVerticalPowerBar;
-import com.github.mochi7054.fluid.SimpleMatterTank;
-import com.mojang.blaze3d.systems.RenderSystem;
-import mekanism.api.math.FloatingLong;
+import com.github.mochi7054.network.ToggleAutoSortPacket;
 import mekanism.client.gui.GuiConfigurableTile;
 import mekanism.client.gui.element.slot.GuiSlot;
 import mekanism.client.gui.element.slot.SlotType;
 import mekanism.client.gui.element.tab.GuiEnergyTab;
-import mekanism.client.gui.element.tab.GuiRedstoneControlTab;
-import mekanism.client.gui.element.tab.GuiSecurityTab;
-import mekanism.client.gui.element.tab.window.GuiUpgradeWindowTab;
 import mekanism.common.inventory.container.slot.ContainerSlotType;
 import mekanism.common.inventory.container.slot.InventoryContainerSlot;
 import mekanism.common.tile.component.config.DataType;
-import mekanism.common.util.text.BooleanStateDisplay;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
-
-import java.util.List;
 
 public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, CollapserMenu> {
 
     private static final ResourceLocation REPLICATION_BACKGROUND = new ResourceLocation("replication", "textures/gui/background.png");
     private static final ResourceLocation PROGRESS_DOWN_TEXTURE = new ResourceLocation("replicatemekanism", "textures/gui/progress_down.png");
     private static final ResourceLocation CUSTOM_SLOT_TEXTURE = new ResourceLocation("replicatemekanism", "textures/gui/slot.png");
+    private static final ResourceLocation SORTING_ICON = new ResourceLocation("mekanism", "gui/sorting.png");
 
     public CollapserScreen(CollapserMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
-        this.imageWidth = 174;
-        this.imageHeight = 220;
-        this.inventoryLabelX = 8;
-        this.inventoryLabelY = 127;
-        this.titleLabelY = 5;
+        ReplicaTier tier = menu.getTileEntity().getTier();
+        this.imageWidth = switch (tier) {
+            case STANDARD, BASIC, ADVANCED -> 174;
+            case ELITE -> 180;
+            case ULTIMATE -> 218;
+        };
+        this.imageHeight = tier == ReplicaTier.STANDARD ? 174 : 184;
+        this.inventoryLabelX = switch (tier) {
+            case STANDARD, BASIC, ADVANCED -> 8;
+            case ELITE -> 10;
+            case ULTIMATE -> 29;
+        };
+        this.inventoryLabelY = tier == ReplicaTier.STANDARD ? 82 : 92;
+        this.titleLabelY = tier == ReplicaTier.STANDARD ? 10 : 7;
         this.dynamicSlots = true;
     }
 
@@ -47,37 +47,53 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
     protected void addGuiElements() {
         super.addGuiElements();
         CollapserBlockEntity tile = menu.getTileEntity();
-        ReplicaTier tier = tile.getReplicaTier();
+        ReplicaTier tier = tile.getTier();
+
+        if (tier == ReplicaTier.STANDARD) {
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.earthTank, 70, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.netherTank, 78, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.organicTank, 86, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.enderTank, 94, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.metallicTank, 102, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.preciousTank, 110, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.livingTank, 118, 25, 5, 42, false));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.quantumTank, 126, 25, 5, 42, false));
+
+            this.addRenderableWidget(new ReplicationGuiVerticalPowerBar(this, tile.energyContainer, 162, 25, 42));
+            this.addRenderableWidget(new CollapserGuiProgress(() -> tile.getProgress(0), this, 41, 41));
+        } else {
+            int fluidStartX = (this.imageWidth - 142) / 2;
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.earthTank, fluidStartX, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.netherTank, fluidStartX + 18, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.organicTank, fluidStartX + 36, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.enderTank, fluidStartX + 54, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.metallicTank, fluidStartX + 72, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.preciousTank, fluidStartX + 90, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.livingTank, fluidStartX + 108, 84, 16, 5, true));
+            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.quantumTank, fluidStartX + 126, 84, 16, 5, true));
+
+            this.addRenderableWidget(new ReplicationGuiVerticalPowerBar(this, tile.energyContainer, this.imageWidth - 12, 25, 42));
+
+            for (int i = 0; i < tile.getTier().getSlots(); i++) {
+                final int idx = i;
+                int arrowX = tile.getSlotX(i) + 5;
+                this.addRenderableWidget(new ReplicationGuiProgressDown(() -> tile.getProgress(idx), this, arrowX, 39));
+            }
+        }
 
         this.addRenderableWidget(new GuiEnergyTab(this, tile.energyContainer, () -> true));
-        
-        
-        
 
         if (tier != ReplicaTier.STANDARD) {
             this.addRenderableWidget(new GuiCollapserSortingTab(this, tile));
         }
 
-        this.addRenderableWidget(new ReplicationGuiVerticalPowerBar(this, tile.energyContainer, 162, 17, 98));
-
-        int slotCount = tile.inputSlots.size();
-        for (int i = 0; i < slotCount; i++) {
-            final int index = i;
-            if (tier == ReplicaTier.STANDARD) {
-                this.addRenderableWidget(new CollapserGuiProgress(
-                        () -> tile.getProgress(index), this, 66, 42));
-            } else {
-                int arrowX = tile.getSlotX(i) + 5;
-                this.addRenderableWidget(new ReplicationGuiProgressDown(
-                        () -> tile.getProgress(index), this, arrowX, 40));
+        for (net.minecraft.client.gui.components.events.GuiEventListener listener : this.children()) {
+            if (listener instanceof mekanism.client.gui.element.GuiElement element) {
+                if (element.getClass().getName().contains("GuiSideHolder")
+                        && element.getRelativeX() < 0 && element.getRelativeY() < 10) {
+                    element.visible = false;
+                }
             }
-        }
-
-        List<SimpleMatterTank> tanks = tile.getMatterTanks();
-        for (int i = 0; i < tanks.size(); i++) {
-            SimpleMatterTank tank = tanks.get(i);
-            int barY = 60 + i * 7;
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tank, 30, barY, 126, 6, true));
         }
     }
 
@@ -93,9 +109,8 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
                 SlotType type;
                 if (dataType != null) {
                     type = SlotType.get(dataType);
-                } else if (slotType == ContainerSlotType.INPUT ||
-                        slotType == ContainerSlotType.OUTPUT ||
-                        slotType == ContainerSlotType.EXTRA) {
+                } else if (slotType == ContainerSlotType.INPUT || slotType == ContainerSlotType.OUTPUT
+                        || slotType == ContainerSlotType.EXTRA) {
                     type = SlotType.NORMAL;
                 } else if (slotType == ContainerSlotType.POWER) {
                     type = SlotType.POWER;
@@ -103,13 +118,13 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
                     type = SlotType.NORMAL;
                 }
 
-                GuiSlot guiSlot = new ReplicationGuiSlot(type, this, slot.x - 1, slot.y - 1, containerSlot);
+                GuiSlot guiSlot = new CollapserGuiSlot(type, this, slot.x - 1, slot.y - 1, containerSlot);
 
                 boolean isPlayerSlot = slot instanceof mekanism.common.inventory.container.slot.MainInventorySlot ||
-                        slot instanceof mekanism.common.inventory.container.slot.HotBarSlot;
+                                       slot instanceof mekanism.common.inventory.container.slot.HotBarSlot;
 
-                if (!isPlayerSlot && (slotType == ContainerSlotType.IGNORED ||
-                        containerSlot instanceof mekanism.common.inventory.container.slot.VirtualInventoryContainerSlot)) {
+                if (!isPlayerSlot && (slotType == ContainerSlotType.IGNORED
+                        || containerSlot instanceof mekanism.common.inventory.container.slot.VirtualInventoryContainerSlot)) {
                     guiSlot.visible = false;
                 }
 
@@ -121,28 +136,26 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
 
                 this.addRenderableWidget(guiSlot);
             } else {
-                GuiSlot guiSlot = new ReplicationGuiSlot(SlotType.NORMAL, this, slot.x - 1, slot.y - 1, slot);
+                GuiSlot guiSlot = new CollapserGuiSlot(SlotType.NORMAL, this, slot.x - 1, slot.y - 1, slot);
                 this.addRenderableWidget(guiSlot);
             }
         }
     }
 
-        private static class ReplicationGuiSlot extends GuiSlot {
+    private static class CollapserGuiSlot extends GuiSlot {
         private final Slot slot;
 
-        public ReplicationGuiSlot(SlotType type, mekanism.client.gui.IGuiWrapper gui, int x, int y, Slot slot) {
+        public CollapserGuiSlot(SlotType type, mekanism.client.gui.IGuiWrapper gui, int x, int y, Slot slot) {
             super(type, gui, x, y);
             this.slot = slot;
         }
 
         @Override
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+
+        @Override
         public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-            this.customDraw(guiGraphics);
-        }
-
-        private void customDraw(GuiGraphics guiGraphics) {
             guiGraphics.blit(CUSTOM_SLOT_TEXTURE, this.relativeX, this.relativeY, 0, 0, 18, 18, 18, 18);
-
             if (slot instanceof InventoryContainerSlot containerSlot) {
                 mekanism.common.inventory.container.slot.SlotOverlay overlay = containerSlot.getSlotOverlay();
                 if (overlay != null) {
@@ -155,15 +168,20 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
         }
     }
 
-        private static class CollapserGuiProgress extends mekanism.client.gui.element.GuiElement {
-        @Override public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+    private static class CollapserGuiProgress extends mekanism.client.gui.element.GuiElement {
         private final java.util.function.DoubleSupplier progressSupplier;
 
         public CollapserGuiProgress(java.util.function.DoubleSupplier progressSupplier,
-                                    mekanism.client.gui.IGuiWrapper gui, int x, int y) {
+                mekanism.client.gui.IGuiWrapper gui, int x, int y) {
             super(gui, x, y, 22, 15);
             this.progressSupplier = progressSupplier;
         }
+
+        @Override
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+
+        @Override
+        public void updateWidgetNarration(net.minecraft.client.gui.narration.NarrationElementOutput output) {}
 
         @Override
         public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
@@ -176,14 +194,9 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
                 }
             }
         }
-
-        @Override
-        public void updateWidgetNarration(NarrationElementOutput output) {
-        }
     }
 
-        private static class ReplicationGuiProgressDown extends mekanism.client.gui.element.GuiElement {
-        @Override public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+    private static class ReplicationGuiProgressDown extends mekanism.client.gui.element.GuiElement {
         private final java.util.function.DoubleSupplier progressSupplier;
 
         public ReplicationGuiProgressDown(java.util.function.DoubleSupplier progressSupplier, mekanism.client.gui.IGuiWrapper gui, int x, int y) {
@@ -192,24 +205,50 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
         }
 
         @Override
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+
+        @Override
+        public void updateWidgetNarration(net.minecraft.client.gui.narration.NarrationElementOutput output) {}
+
+        @Override
         public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
             guiGraphics.blit(PROGRESS_DOWN_TEXTURE, this.relativeX, this.relativeY, 0, 0, 8, 15, 16, 15);
             double progress = progressSupplier.getAsDouble();
             if (progress > 0) {
-                int fillHeight = (int) Math.round(progress * 15);
-                if (fillHeight > 0) {
-                    guiGraphics.blit(PROGRESS_DOWN_TEXTURE, this.relativeX, this.relativeY, 8, 0, 8, fillHeight, 16, 15);
+                int height = (int) (progress * 15);
+                if (height > 0) {
+                    guiGraphics.blit(PROGRESS_DOWN_TEXTURE, this.relativeX, this.relativeY, 8, 0, 8, height, 16, 15);
                 }
             }
         }
-
-        @Override
-        public void updateWidgetNarration(NarrationElementOutput output) {
-        }
     }
 
-    private void drawMachineArea(GuiGraphics guiGraphics, int x, int y, int width) {
-        guiGraphics.blit(REPLICATION_BACKGROUND, x, y, 0, 0, width, 130);
+    private void drawMachineArea(GuiGraphics guiGraphics, int x, int y, int width, boolean standard) {
+        if (standard) {
+            guiGraphics.blit(REPLICATION_BACKGROUND, x, y, 0, 0, width, 88);
+        } else {
+            guiGraphics.blit(REPLICATION_BACKGROUND, x, y, 0, 0, 8, 80);
+            for (int dx = 8; dx < width - 6; dx++) {
+                guiGraphics.blit(REPLICATION_BACKGROUND, x + dx, y, 150, 0, 1, 80);
+            }
+            guiGraphics.blit(REPLICATION_BACKGROUND, x + width - 6, y, 168, 0, 6, 80);
+
+            for (int dy = 0; dy < 10; dy++) {
+                int curY = y + 80 + dy;
+                guiGraphics.blit(REPLICATION_BACKGROUND, x, curY, 0, 80, 8, 1);
+                for (int dx = 8; dx < width - 6; dx++) {
+                    guiGraphics.blit(REPLICATION_BACKGROUND, x + dx, curY, 150, 80, 1, 1);
+                }
+                guiGraphics.blit(REPLICATION_BACKGROUND, x + width - 6, curY, 168, 80, 6, 1);
+            }
+
+            int curY = y + 90;
+            guiGraphics.blit(REPLICATION_BACKGROUND, x, curY, 0, 80, 8, 8);
+            for (int dx = 8; dx < width - 6; dx++) {
+                guiGraphics.blit(REPLICATION_BACKGROUND, x + dx, curY, 150, 80, 1, 8);
+            }
+            guiGraphics.blit(REPLICATION_BACKGROUND, x + width - 6, curY, 168, 80, 6, 8);
+        }
     }
 
     private void drawInventoryArea(GuiGraphics guiGraphics, int left, int top, int width, int xOffset) {
@@ -243,11 +282,18 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
     @Override
     protected void renderBg(GuiGraphics guiGraphics, float partialTicks, int mouseX, int mouseY) {
         mekanism.client.render.MekanismRenderer.resetColor(guiGraphics);
-        if (this.getXSize() < 8 || this.getYSize() < 8) {
-            return;
-        }
-        drawMachineArea(guiGraphics, this.leftPos, this.topPos, this.imageWidth);
-        drawInventoryArea(guiGraphics, this.leftPos, this.topPos + 130, this.imageWidth, 8);
+        if (this.getXSize() < 8 || this.getYSize() < 8) return;
+        ReplicaTier tier = menu.getTileEntity().getTier();
+        boolean standard = tier == ReplicaTier.STANDARD;
+
+        int xOffset = switch (tier) {
+            case STANDARD, BASIC, ADVANCED -> 8;
+            case ELITE -> 10;
+            case ULTIMATE -> 29;
+        };
+
+        drawMachineArea(guiGraphics, this.leftPos, this.topPos, this.imageWidth, standard);
+        drawInventoryArea(guiGraphics, this.leftPos, this.topPos + (standard ? 88 : 98), this.imageWidth, xOffset);
     }
 
     @Override
@@ -259,24 +305,27 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
         super.drawForegroundText(graphics, mouseX, mouseY);
     }
 
-        private static class GuiCollapserSortingTab extends mekanism.client.gui.element.GuiInsetElement<CollapserBlockEntity> {
-        @Override
-        public void updateWidgetNarration(NarrationElementOutput output) {}
-
-        @Override
-        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-            drawBackground(guiGraphics, mouseX, mouseY, partialTicks);
+    private static class GuiCollapserSortingTab extends mekanism.client.gui.element.GuiInsetElement<CollapserBlockEntity> {
+        public GuiCollapserSortingTab(mekanism.client.gui.IGuiWrapper gui, CollapserBlockEntity tile) {
+            super(SORTING_ICON, gui, tile, -26, 62, 35, 18, true);
         }
 
-        public GuiCollapserSortingTab(mekanism.client.gui.IGuiWrapper gui, CollapserBlockEntity tile) {
-            super(new ResourceLocation("mekanism", "gui/sorting.png"), gui, tile, -26, 62, 35, 18, true);
+        @Override
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+
+        @Override
+        public void updateWidgetNarration(net.minecraft.client.gui.narration.NarrationElementOutput output) {}
+
+        @Override
+        protected void colorTab(GuiGraphics guiGraphics) {
+            mekanism.client.render.MekanismRenderer.color(guiGraphics, mekanism.client.SpecialColors.TAB_FACTORY_SORT);
         }
 
         @Override
         public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
             super.drawBackground(guiGraphics, mouseX, mouseY, partialTicks);
-            Component stateText = BooleanStateDisplay.OnOff.of(this.dataSource.sorting).getTextComponent();
-            this.drawTextScaledBound(guiGraphics, stateText, this.relativeX + 3, this.relativeY + 24, this.titleTextColor(), 21.0f);
+            Component stateText = mekanism.common.util.text.BooleanStateDisplay.OnOff.of(dataSource.sorting).getTextComponent();
+            drawTextScaledBound(guiGraphics, stateText, this.relativeX + 3, this.relativeY + 24, this.titleTextColor(), 21.0F);
         }
 
         @Override
@@ -286,13 +335,10 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
         }
 
         @Override
-        protected void colorTab(GuiGraphics guiGraphics) {
-            mekanism.client.render.MekanismRenderer.color(guiGraphics, mekanism.client.SpecialColors.TAB_FACTORY_SORT);
-        }
-
-        @Override
         public void onClick(double mouseX, double mouseY, int button) {
-            ReplicateMekanism.PACKET_HANDLER.sendToServer(new com.github.mochi7054.network.ToggleAutoSortPacket(this.dataSource.getBlockPos()));
+            com.github.mochi7054.ReplicateMekanism.PACKET_HANDLER.sendToServer(
+                new ToggleAutoSortPacket(dataSource.getBlockPos())
+            );
         }
     }
 }
