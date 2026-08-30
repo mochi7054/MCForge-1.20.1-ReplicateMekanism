@@ -54,29 +54,64 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
     public List<InputInventorySlot> inputSlots = new ArrayList<>();
     public EnergyInventorySlot energySlot;
 
-    public final SimpleMatterTank earthTank = new SimpleMatterTank(com.buuz135.replication.api.MatterType.EARTH, 16000);
-    public final SimpleMatterTank netherTank = new SimpleMatterTank(com.buuz135.replication.api.MatterType.NETHER, 16000);
-    public final SimpleMatterTank organicTank = new SimpleMatterTank(com.buuz135.replication.api.MatterType.ORGANIC, 16000);
-    public final SimpleMatterTank enderTank = new SimpleMatterTank(com.buuz135.replication.api.MatterType.ENDER, 16000);
-    public final SimpleMatterTank metallicTank = new SimpleMatterTank(com.buuz135.replication.api.MatterType.METALLIC, 16000);
-    public final SimpleMatterTank preciousTank = new SimpleMatterTank(com.buuz135.replication.api.MatterType.PRECIOUS, 16000);
-    public final SimpleMatterTank livingTank = new SimpleMatterTank(com.buuz135.replication.api.MatterType.LIVING, 16000);
-    public final SimpleMatterTank quantumTank = new SimpleMatterTank(com.buuz135.replication.api.MatterType.QUANTUM, 16000);
+    public SimpleMatterTank earthTank;
+    public SimpleMatterTank netherTank;
+    public SimpleMatterTank organicTank;
+    public SimpleMatterTank enderTank;
+    public SimpleMatterTank metallicTank;
+    public SimpleMatterTank preciousTank;
+    public SimpleMatterTank livingTank;
+    public SimpleMatterTank quantumTank;
+    public mekanism.common.capabilities.fluid.BasicFluidTank dummyFluidTank;
 
-    private final List<SimpleMatterTank> tanks = List.of(
-            earthTank, netherTank, organicTank, enderTank,
-            metallicTank, preciousTank, livingTank, quantumTank
-    );
+    public List<SimpleMatterTank> getMatterTanks() {
+        return List.of(earthTank, netherTank, organicTank, enderTank, metallicTank, preciousTank, livingTank, quantumTank);
+    }
 
     public int[] operatingTicks;
     public boolean sorting = false;
 
+    @Override
+    public mekanism.common.tile.component.TileComponentUpgrade getComponent() { 
+        return upgradeComponent; 
+    }
+
+    @Override
+    public java.util.Set<mekanism.api.Upgrade> getSupportedUpgrade() {
+        return java.util.EnumSet.of(Upgrade.SPEED, Upgrade.ENERGY);
+    }
+
+    @Override
+    public void recalculateUpgrades(Upgrade upgrade) { 
+        super.recalculateUpgrades(upgrade); 
+    }
+
+    public static mekanism.common.registration.impl.BlockRegistryObject<?, ?> getProvider(BlockState state) {
+        if (state != null && state.getBlock() instanceof CollapserBlock block) {
+            return switch (block.getTier()) {
+                case STANDARD -> ReplicateMekanism.COLLAPSER_BLOCK;
+                case BASIC -> ReplicateMekanism.COLLAPSER_BASIC_BLOCK;
+                case ADVANCED -> ReplicateMekanism.COLLAPSER_ADVANCED_BLOCK;
+                case ELITE -> ReplicateMekanism.COLLAPSER_ELITE_BLOCK;
+                case ULTIMATE -> ReplicateMekanism.COLLAPSER_ULTIMATE_BLOCK;
+            };
+        }
+        return ReplicateMekanism.COLLAPSER_BLOCK;
+    }
+
     public CollapserBlockEntity(BlockPos pos, BlockState state) {
-        this(ReplicateMekanism.COLLAPSER_BLOCK, pos, state);
+        this(getProvider(state), pos, state);
     }
 
     public CollapserBlockEntity(mekanism.common.registration.impl.BlockRegistryObject<?, ?> blockProvider, BlockPos pos, BlockState state) {
         super(blockProvider, pos, state);
+
+        upgradeComponent = new mekanism.common.tile.component.TileComponentUpgrade(this);
+        upgradeComponent.setSupported(Upgrade.SPEED);
+        upgradeComponent.setSupported(Upgrade.ENERGY);
+        if (ReplicateMekanism.REPLICA_UPGRADE_TYPE != null) {
+            upgradeComponent.setSupported(ReplicateMekanism.REPLICA_UPGRADE_TYPE);
+        }
 
         int slotCount = inputSlots != null ? inputSlots.size() : getTier().getSlots();
         this.operatingTicks = new int[slotCount];
@@ -104,6 +139,17 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
             }
         }
 
+        // Add FLUID configuration
+        configComponent.setupOutputConfig(TransmissionType.FLUID, dummyFluidTank);
+        var fluidConfig = configComponent.getConfig(TransmissionType.FLUID);
+        if (fluidConfig != null) {
+            fluidConfig.setCanEject(true);
+            fluidConfig.setEjecting(true);
+            for (mekanism.api.RelativeSide side : mekanism.api.RelativeSide.values()) {
+                fluidConfig.setDataType(mekanism.common.tile.component.config.DataType.OUTPUT, side);
+            }
+        }
+
         ejectorComponent.setOutputData(configComponent, TransmissionType.ITEM);
     }
 
@@ -124,9 +170,7 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
     public ReplicaTier getReplicaTier() {
         return getTier();
     }
-public List<SimpleMatterTank> getMatterTanks() {
-        return tanks;
-    }
+
 
     public static MatterCompound getMatterCompoundSafe(ItemStack stack) {
         if (stack.isEmpty()) return null;
@@ -190,6 +234,24 @@ public List<SimpleMatterTank> getMatterTanks() {
         EnergyContainerHelper builder = EnergyContainerHelper.forSideWithConfig(this::getDirection, this::getConfig);
         energyContainer = MachineEnergyContainer.input(this, listener);
         builder.addContainer(energyContainer);
+        return builder.build();
+    }
+
+    @NotNull
+    @Override
+    protected mekanism.common.capabilities.holder.fluid.IFluidTankHolder getInitialFluidTanks(IContentsListener listener) {
+        int capacity = getTier().getTankCapacity();
+        earthTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.EARTH.get(), capacity);
+        netherTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.NETHER.get(), capacity);
+        organicTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.ORGANIC.get(), capacity);
+        enderTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.ENDER.get(), capacity);
+        metallicTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.METALLIC.get(), capacity);
+        preciousTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.PRECIOUS.get(), capacity);
+        livingTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.LIVING.get(), capacity);
+        quantumTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.QUANTUM.get(), capacity);
+        mekanism.common.capabilities.holder.fluid.FluidTankHelper builder = mekanism.common.capabilities.holder.fluid.FluidTankHelper.forSideWithConfig(this::getDirection, this::getConfig);
+        dummyFluidTank = mekanism.common.capabilities.fluid.BasicFluidTank.create(1000, listener);
+        builder.addTank(dummyFluidTank);
         return builder.build();
     }
 
