@@ -22,10 +22,11 @@
     "MatterNetworkMixin",
     "GuiConfigTypeTabMixin",
     "GuiWindowMixin",
-    "GuiTexturedElementMixin"
+    "GuiTexturedElementMixin",
+    "CollapserBlockEntityMixin",
+    "ImaginatorBlockEntityMixin"
   ],
-  "client": [
-  ],
+  "client": [],
   "injectors": {
     "defaultRequire": 1
   }

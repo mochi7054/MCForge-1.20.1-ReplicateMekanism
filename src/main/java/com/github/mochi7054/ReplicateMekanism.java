@@ -241,6 +241,27 @@ public class ReplicateMekanism {
     }
 
     private void commonSetup(final FMLCommonSetupEvent event) {
+
+        try {
+            java.lang.reflect.Field f = mekanism.common.util.EnumUtils.class.getDeclaredField("UPGRADES");
+            f.setAccessible(true);
+            mekanism.api.Upgrade[] current = (mekanism.api.Upgrade[]) f.get(null);
+            boolean found = false;
+            for (mekanism.api.Upgrade u : current) {
+                if (u == REPLICA_UPGRADE_TYPE) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found && REPLICA_UPGRADE_TYPE != null) {
+                mekanism.api.Upgrade[] updated = java.util.Arrays.copyOf(current, current.length + 1);
+                updated[current.length] = REPLICA_UPGRADE_TYPE;
+                f.set(null, updated);
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to inject REPLICA_UPGRADE into EnumUtils.UPGRADES", e);
+        }
+
         LOGGER.info("ReplicateMekanism Common Setup (MC 1.20.1)");
 
         int id = 0;

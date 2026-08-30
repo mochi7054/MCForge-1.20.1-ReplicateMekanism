@@ -38,6 +38,7 @@ public class ForensicChamberBlock extends BlockTile<ForensicChamberBlockEntity, 
         blockType.add(
                 new mekanism.common.block.attribute.AttributeEnergy(() -> FloatingLong.create(50), () -> FloatingLong.create(40_000)),
                 new mekanism.common.block.attribute.AttributeGui(containerSupplier::get, description),
+                new mekanism.common.block.attribute.AttributeUpgradeSupport(java.util.Set.of(mekanism.api.Upgrade.ENERGY)),
                 new mekanism.common.block.attribute.AttributeStateFacing(),
                 mekanism.common.block.attribute.Attributes.ACTIVE,
                 mekanism.common.block.attribute.Attributes.SECURITY,
