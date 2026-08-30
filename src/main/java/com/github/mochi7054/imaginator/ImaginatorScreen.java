@@ -60,7 +60,7 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
             this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.quantumTank, 64, 25, 5, 42, false));
 
             this.addRenderableWidget(new ReplicationGuiVerticalPowerBar(this, tile.energyContainer, 162, 25, 42));
-            this.addRenderableWidget(new ReplicationGuiProgress(() -> tile.getProgress(0), this, 95, 41));
+            this.addRenderableWidget(new ReplicationGuiProgress(() -> tile.getScaledProgress(), this, 95, 41));
         } else {
             int fluidStartX = (this.imageWidth - 142) / 2;
             this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.earthTank, fluidStartX, 84, 16, 5, true));
@@ -74,10 +74,12 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
 
             this.addRenderableWidget(new ReplicationGuiVerticalPowerBar(this, tile.energyContainer, this.imageWidth - 12, 25, 42));
 
+            int startX = (tier == ReplicaTier.BASIC) ? 55 : (tier == ReplicaTier.ADVANCED) ? 35 : (tier == ReplicaTier.ELITE) ? 32 : 30;
+            int gap = (tier == ReplicaTier.BASIC) ? 38 : (tier == ReplicaTier.ADVANCED) ? 26 : 19;
             for (int i = 0; i < tile.getTier().getSlotCount(); i++) {
                 final int idx = i;
-                int arrowX = tile.getSlotX(i) + 5;
-                this.addRenderableWidget(new ReplicationGuiProgressDown(() -> tile.getProgress(idx), this, arrowX, 39));
+                int arrowX = startX + idx * gap + 5;
+                this.addRenderableWidget(new ReplicationGuiProgressDown(() -> tile.getScaledProgress(idx), this, arrowX, 39));
             }
         }
 
