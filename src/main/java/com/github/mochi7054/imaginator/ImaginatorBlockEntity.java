@@ -150,12 +150,12 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
 
     public ReplicaTier getTier() {
         try {
-            if (getBlockType() instanceof ImaginatorBlock imaginatorBlock) {
+            if (getBlockState() != null && getBlockState().getBlock() instanceof ImaginatorBlock imaginatorBlock) {
                 return imaginatorBlock.getTier();
             }
         } catch (Exception ignored) {}
         try {
-            if (getBlockState() != null && getBlockState().getBlock() instanceof ImaginatorBlock imaginatorBlock) {
+            if (getBlockType() instanceof ImaginatorBlock imaginatorBlock) {
                 return imaginatorBlock.getTier();
             }
         } catch (Exception ignored) {}

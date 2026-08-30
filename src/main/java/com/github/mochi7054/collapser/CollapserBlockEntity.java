@@ -93,14 +93,14 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
         ejectorComponent.setOutputData(configComponent, TransmissionType.ITEM);
     }
 
-            public ReplicaTier getTier() {
+    public ReplicaTier getTier() {
         try {
-            if (getBlockType() instanceof CollapserBlock collapserBlock) {
+            if (getBlockState() != null && getBlockState().getBlock() instanceof CollapserBlock collapserBlock) {
                 return collapserBlock.getTier();
             }
         } catch (Exception ignored) {}
         try {
-            if (getBlockState() != null && getBlockState().getBlock() instanceof CollapserBlock collapserBlock) {
+            if (getBlockType() instanceof CollapserBlock collapserBlock) {
                 return collapserBlock.getTier();
             }
         } catch (Exception ignored) {}
