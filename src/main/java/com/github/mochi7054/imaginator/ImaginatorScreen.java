@@ -119,7 +119,7 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         }
     }
 
-    private static class ReplicationGuiSlot extends GuiSlot {
+        private static class ReplicationGuiSlot extends GuiSlot {
         private final Slot slot;
 
         public ReplicationGuiSlot(SlotType type, mekanism.client.gui.IGuiWrapper gui, int x, int y, Slot slot) {
@@ -129,19 +129,7 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
 
         @Override
         public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-            if (this.isRenderAboveSlots()) {
-                this.customDraw(guiGraphics);
-            }
-        }
-
-        private boolean isRenderAboveSlots() {
-            try {
-                java.lang.reflect.Field field = GuiSlot.class.getDeclaredField("renderAboveSlots");
-                field.setAccessible(true);
-                return field.getBoolean(this);
-            } catch (Exception e) {
-                return false;
-            }
+            this.customDraw(guiGraphics);
         }
 
         private void customDraw(GuiGraphics guiGraphics) {
@@ -158,7 +146,8 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         }
     }
 
-    private static class ReplicationGuiProgress extends mekanism.client.gui.element.GuiElement {
+        private static class ReplicationGuiProgress extends mekanism.client.gui.element.GuiElement {
+        @Override public void renderWidget(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
         private final java.util.function.DoubleSupplier progressSupplier;
 
         public ReplicationGuiProgress(java.util.function.DoubleSupplier progressSupplier, mekanism.client.gui.IGuiWrapper gui, int x, int y) {
@@ -167,7 +156,7 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         }
 
         @Override
-        public void renderWidget(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        public void drawBackground(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
             guiGraphics.blit(REPLICATION_BACKGROUND, this.relativeX, this.relativeY, 177, 61, 22, 15, 256, 256);
             double progress = progressSupplier.getAsDouble();
             if (progress > 0) {
@@ -179,15 +168,11 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         }
 
         @Override
-        public void drawBackground(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-            this.renderWidget(guiGraphics, mouseX, mouseY, partialTicks);
-        }
-
-        @Override
         public void updateWidgetNarration(NarrationElementOutput output) {}
     }
 
-    private static class ReplicationGuiProgressDown extends mekanism.client.gui.element.GuiElement {
+        private static class ReplicationGuiProgressDown extends mekanism.client.gui.element.GuiElement {
+        @Override public void renderWidget(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
         private final java.util.function.DoubleSupplier progressSupplier;
 
         public ReplicationGuiProgressDown(java.util.function.DoubleSupplier progressSupplier, mekanism.client.gui.IGuiWrapper gui, int x, int y) {
@@ -196,7 +181,7 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
         }
 
         @Override
-        public void renderWidget(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+        public void drawBackground(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
             guiGraphics.blit(PROGRESS_DOWN_TEXTURE, this.relativeX, this.relativeY, 0, 0, 8, 15, 16, 15);
             double progress = progressSupplier.getAsDouble();
             if (progress > 0) {
@@ -205,11 +190,6 @@ public class ImaginatorScreen extends GuiConfigurableTile<ImaginatorBlockEntity,
                     guiGraphics.blit(PROGRESS_DOWN_TEXTURE, this.relativeX, this.relativeY, 8, 0, 8, height, 16, 15);
                 }
             }
-        }
-
-        @Override
-        public void drawBackground(net.minecraft.client.gui.GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-            this.renderWidget(guiGraphics, mouseX, mouseY, partialTicks);
         }
 
         @Override

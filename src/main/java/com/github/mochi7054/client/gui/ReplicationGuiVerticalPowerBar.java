@@ -22,10 +22,10 @@ public class ReplicationGuiVerticalPowerBar extends GuiElement {
         this.energyContainer = energyContainer;
     }
 
+    
+
     @Override
-    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        drawBackground(guiGraphics, mouseX, mouseY, partialTicks);
-    }
+    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
 
     @Override
     public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {

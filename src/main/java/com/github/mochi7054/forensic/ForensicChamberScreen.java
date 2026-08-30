@@ -86,7 +86,7 @@ public class ForensicChamberScreen extends GuiConfigurableTile<ForensicChamberBl
         }
     }
 
-    private static class ReplicationGuiSlot extends GuiSlot {
+        private static class ReplicationGuiSlot extends GuiSlot {
         private final Slot slot;
 
         public ReplicationGuiSlot(SlotType type, mekanism.client.gui.IGuiWrapper gui, int x, int y, Slot slot) {
@@ -95,27 +95,8 @@ public class ForensicChamberScreen extends GuiConfigurableTile<ForensicChamberBl
         }
 
         @Override
-        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-            if (!this.isRenderAboveSlots()) {
-                this.customDraw(guiGraphics);
-            }
-        }
-
-        @Override
         public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-            if (this.isRenderAboveSlots()) {
-                this.customDraw(guiGraphics);
-            }
-        }
-
-        private boolean isRenderAboveSlots() {
-            try {
-                java.lang.reflect.Field field = GuiSlot.class.getDeclaredField("renderAboveSlots");
-                field.setAccessible(true);
-                return field.getBoolean(this);
-            } catch (Exception e) {
-                return false;
-            }
+            this.customDraw(guiGraphics);
         }
 
         private void customDraw(GuiGraphics guiGraphics) {
