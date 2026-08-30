@@ -9,6 +9,7 @@ import net.minecraft.resources.ResourceLocation;
 public class RMChemical {
     public static final InfuseTypeDeferredRegister INFUSE_TYPES = new InfuseTypeDeferredRegister(ReplicateMekanism.MODID);
 
+    public static final InfuseTypeRegistryObject<InfuseType> REPLICA = INFUSE_TYPES.register("replica", new ResourceLocation(ReplicateMekanism.MODID, "infuse_type/replica"), 0x6A8FCC);
     public static final InfuseTypeRegistryObject<InfuseType> EARTH_MATTER = INFUSE_TYPES.register("earth_matter", new ResourceLocation(ReplicateMekanism.MODID, "infuse_type/replica"), 0x48793C);
     public static final InfuseTypeRegistryObject<InfuseType> NETHER_MATTER = INFUSE_TYPES.register("nether_matter", new ResourceLocation(ReplicateMekanism.MODID, "infuse_type/replica"), 0x762525);
     public static final InfuseTypeRegistryObject<InfuseType> ORGANIC_MATTER = INFUSE_TYPES.register("organic_matter", new ResourceLocation(ReplicateMekanism.MODID, "infuse_type/replica"), 0xA97E36);

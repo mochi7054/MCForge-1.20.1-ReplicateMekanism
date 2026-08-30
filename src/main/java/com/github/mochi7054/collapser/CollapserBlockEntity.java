@@ -211,10 +211,7 @@ public List<SimpleMatterTank> getMatterTanks() {
         }
 
         for (int i = 0; i < slotCount; i++) {
-            InputInventorySlot inputSlot = InputInventorySlot.at(stack -> {
-                var compound = com.buuz135.replication.calculation.ReplicationCalculation.getMatterCompound(stack);
-                return compound != null && !compound.getValues().isEmpty();
-            }, listener, inputCoords[i][0], inputCoords[i][1]);
+            InputInventorySlot inputSlot = InputInventorySlot.at(stack -> !stack.isEmpty(), listener, inputCoords[i][0], inputCoords[i][1]);
             inputSlots.add(inputSlot);
             builder.addSlot(inputSlot);
         }
@@ -272,7 +269,7 @@ public List<SimpleMatterTank> getMatterTanks() {
                         IMatterType matterType = value.getMatter();
                         SimpleMatterTank tank = getTankForType(matterType);
                         if (tank != null) {
-                            tank.fill(new com.buuz135.replication.api.matter_fluid.MatterStack(matterType, (int) Math.round(value.getAmount())),
+                            tank.fillDouble(value.getAmount(),
                                     net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
                         }
                     }

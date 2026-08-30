@@ -311,7 +311,7 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
         }
 
         for (int i = 0; i < slotCount; i++) {
-            InputInventorySlot inputSlot = InputInventorySlot.at(stack -> stack.getItem() instanceof com.buuz135.replication.item.MemoryChipItem, listener, inputCoords[i][0], inputCoords[i][1]);
+            InputInventorySlot inputSlot = InputInventorySlot.at(stack -> !stack.isEmpty(), listener, inputCoords[i][0], inputCoords[i][1]);
             inputSlots.add(inputSlot);
             builder.addSlot(inputSlot);
         }
@@ -441,12 +441,28 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
     }
 
     private com.github.mochi7054.fluid.SimpleMatterTank getMatchingTank(IMatterType neededMatterType) {
+        if (neededMatterType == null) return null;
         for (com.github.mochi7054.fluid.SimpleMatterTank tank : getMatterTanks()) {
-            if (tank.getMatter().getMatterType().getName().equals(neededMatterType.getName())) {
+            if (tank.getMatterType() != null && tank.getMatterType().getName().equalsIgnoreCase(neededMatterType.getName())) {
                 return tank;
             }
         }
         return null;
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static ItemStack getReplicatingStackFromInput(ItemStack input) {
+        if (input.isEmpty()) return ItemStack.EMPTY;
+        if (input.getItem() instanceof com.buuz135.replication.api.pattern.IMatterPatternHolder holder) {
+            var patterns = holder.getPatterns(input);
+            if (patterns != null && !patterns.isEmpty() && patterns.get(0) != null) {
+                var p = (com.buuz135.replication.api.pattern.MatterPattern) patterns.get(0);
+                if (p.getStack() != null && !p.getStack().isEmpty()) {
+                    return p.getStack();
+                }
+            }
+        }
+        return input;
     }
 
     private void performReplication(int activeSlotIndex, MatterCompound recipeCompound, com.buuz135.replication.network.MatterNetwork network) {
@@ -457,7 +473,7 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
 
                 com.github.mochi7054.fluid.SimpleMatterTank matchingTank = getMatchingTank(neededMatterType);
                 if (matchingTank != null) {
-                    matchingTank.drain((int) Math.round(neededAmount), net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+                    matchingTank.drainDouble(neededAmount, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
                 }
             }
 
@@ -531,8 +547,9 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
             } else {
                 OutputInventorySlot outputSlot = outputSlots.get(activeSlotIndex);
                 ItemStack sourceStack = inputSlots.get(activeSlotIndex).getStack();
+                ItemStack targetItem = getReplicatingStackFromInput(sourceStack);
                 ItemStack outputStack = outputSlot.getStack();
-                ItemStack newOutput = sourceStack.copyWithCount(outputCount);
+                ItemStack newOutput = targetItem.copyWithCount(outputCount);
                 if (outputStack.isEmpty()) {
                     outputSlot.setStack(newOutput);
                 } else if (ItemStack.isSameItemSameTags(outputStack, newOutput) && outputStack.getCount() + outputCount <= outputStack.getMaxStackSize()) {
@@ -655,7 +672,7 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
                 if (task != null) {
                     checkStack = this.activeCraftingStacks[i];
                 } else {
-                    checkStack = inputSlots.get(i).getStack();
+                    checkStack = getReplicatingStackFromInput(inputSlots.get(i).getStack());
                 }
 
                 if (!checkStack.isEmpty()) {

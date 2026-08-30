@@ -183,7 +183,7 @@ public class ReplicateMekanism {
 
         REPLICATEMEKANISM_TAB = CREATIVE_MODE_TABS.register("tab", () -> CreativeModeTab.builder()
                 .title(Component.translatable("itemGroup.replicatemekanism"))
-                .icon(() -> new ItemStack(REPLICA_UPGRADE_ITEM.get()))
+                .icon(() -> new ItemStack(REPLICA_ALLOY_ITEM.get()))
                 .displayItems((parameters, output) -> {
                     output.accept(REPLICA_UPGRADE_ITEM.get());
                     output.accept(REPLICA_TIER_INSTALLER.get());

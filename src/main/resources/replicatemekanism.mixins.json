@@ -1,4 +1,4 @@
-﻿{
+{
   "required": true,
   "minVersion": "0.8",
   "package": "com.github.mochi7054.mixin",
@@ -26,6 +26,6 @@
     "GuiWindowMixin"
   ],
   "injectors": {
-    "defaultRequire": 1
+    "defaultRequire": 0
   }
 }
