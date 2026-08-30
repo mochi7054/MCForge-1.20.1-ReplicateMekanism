@@ -683,7 +683,7 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
                             IMatterType neededMatterType = entry.getKey();
                             double neededAmount = entry.getValue().getAmount();
                             com.github.mochi7054.fluid.SimpleMatterTank matchingTank = getMatchingTank(neededMatterType);
-                            if (matchingTank == null || matchingTank.getStored() < neededAmount) {
+                            if (matchingTank == null || matchingTank.getStored() < neededAmount - 0.0001) {
                                 allFluidsAvailable = false;
                                 break;
                             }
@@ -1014,7 +1014,8 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
         if (this.operatingTicks == null || slotIndex < 0 || slotIndex >= this.operatingTicks.length) {
             return 0;
         }
-        return (double) this.operatingTicks[slotIndex] / (double) ticksRequired;
+        int ticks = MekanismUtils.getTicks(this, BASE_TICKS_REQUIRED);
+        return (double) this.operatingTicks[slotIndex] / (double) Math.max(1, ticks);
     }
 
     public double getScaledProgress() {
