@@ -24,6 +24,7 @@ import mekanism.common.inventory.slot.EnergyInventorySlot;
 import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.lib.transmitter.TransmissionType;
 import mekanism.common.tile.component.TileComponentEjector;
+import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.prefab.TileEntityConfigurableMachine;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.core.BlockPos;
@@ -80,6 +81,7 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
         int slotCount = getTier().getSlots();
         this.operatingTicks = new int[slotCount];
 
+        configComponent = new TileComponentConfig(this, TransmissionType.ITEM, TransmissionType.ENERGY, TransmissionType.FLUID);
         ejectorComponent = new TileComponentEjector(this);
 
         for (int i = 0; i < inputSlots.size(); i++) {

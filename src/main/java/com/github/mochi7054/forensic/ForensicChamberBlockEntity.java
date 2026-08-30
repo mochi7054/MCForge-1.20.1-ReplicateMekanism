@@ -21,6 +21,7 @@ import mekanism.common.inventory.slot.EnergyInventorySlot;
 import mekanism.common.inventory.slot.OutputInventorySlot;
 import mekanism.common.lib.transmitter.TransmissionType;
 import mekanism.common.tile.component.TileComponentEjector;
+import mekanism.common.tile.component.TileComponentConfig;
 import mekanism.common.tile.prefab.TileEntityConfigurableMachine;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.core.BlockPos;
@@ -46,6 +47,7 @@ public class ForensicChamberBlockEntity extends TileEntityConfigurableMachine im
     public ForensicChamberBlockEntity(BlockPos pos, BlockState state) {
         super(ReplicateMekanism.FORENSIC_CHAMBER_BLOCK, pos, state);
 
+        configComponent = new TileComponentConfig(this, TransmissionType.ITEM, TransmissionType.ENERGY);
         ejectorComponent = new TileComponentEjector(this);
 
         configComponent.setupItemIOExtraConfig(inputSlot, chipOutputSlot, chipInputSlot, energySlot);

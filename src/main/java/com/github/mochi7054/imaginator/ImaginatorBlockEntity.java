@@ -170,6 +170,7 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
 
     public ImaginatorBlockEntity(BlockPos pos, BlockState state) {
         super(getProvider(state), pos, state);
+        configComponent = new mekanism.common.tile.component.TileComponentConfig(this, mekanism.common.lib.transmitter.TransmissionType.ITEM, mekanism.common.lib.transmitter.TransmissionType.ENERGY, mekanism.common.lib.transmitter.TransmissionType.FLUID);
         
         // ITEM config: all input slots and output slots
         configComponent.setupItemIOConfig(
