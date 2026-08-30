@@ -242,7 +242,9 @@ public List<SimpleMatterTank> getMatterTanks() {
     @Override
     protected void onUpdateServer() {
         super.onUpdateServer();
-        energySlot.fillContainerOrConvert();
+        if (energySlot != null) {
+            energySlot.fillContainerOrConvert();
+        }
 
         if (this.sorting && inputSlots.size() > 1 && level != null && level.getGameTime() % 20 == 0) {
             sortInputSlots();
@@ -250,6 +252,8 @@ public List<SimpleMatterTank> getMatterTanks() {
 
         if (MekanismUtils.canFunction(this)) {
             processCollapsing();
+        } else if (level != null && level.getGameTime() % 40 == 0) {
+            ReplicateMekanism.LOGGER.info("Collapser: MekanismUtils.canFunction(this) is false.");
         }
         ejectMatter();
     }
@@ -275,6 +279,9 @@ public List<SimpleMatterTank> getMatterTanks() {
 
             MatterCompound compound = getMatterCompoundSafe(stack);
             if (compound == null || compound.getValues().isEmpty()) {
+                if (level != null && level.getGameTime() % 40 == 0) {
+                    ReplicateMekanism.LOGGER.info("Collapser slot {}: item {} has no matter compound!", i, stack.getItem());
+                }
                 if (operatingTicks[i] > 0) {
                     operatingTicks[i] = 0;
                     markForSave();
@@ -288,15 +295,26 @@ public List<SimpleMatterTank> getMatterTanks() {
                 SimpleMatterTank tank = getTankForType(matterType);
                 if (tank == null || tank.getNeeded() < value.getAmount()) {
                     allTanksHaveSpace = false;
+                    if (level != null && level.getGameTime() % 40 == 0) {
+                        ReplicateMekanism.LOGGER.info("Collapser slot {}: tank for {} is full! needed={}", i, matterType.getName(), tank != null ? tank.getNeeded() : -1);
+                    }
                     break;
                 }
             }
 
             if (allTanksHaveSpace) {
-                if (energyContainer.getEnergy().greaterOrEqual(energyUsage)) {
+                boolean hasEnergy = energyContainer.getEnergy().greaterOrEqual(energyUsage);
+                if (!hasEnergy && level != null && level.getGameTime() % 40 == 0) {
+                    ReplicateMekanism.LOGGER.info("Collapser slot {}: Not enough energy! stored={}, usage={}", i, energyContainer.getEnergy(), energyUsage);
+                }
+                if (hasEnergy) {
                     energyContainer.extract(energyUsage, Action.EXECUTE, AutomationType.INTERNAL);
                     operatingTicks[i]++;
                     anyOperating = true;
+
+                    if (level != null && level.getGameTime() % 20 == 0) {
+                        ReplicateMekanism.LOGGER.info("Collapser slot {}: operating progress {}/{}", i, operatingTicks[i], ticksRequired);
+                    }
 
                     if (operatingTicks[i] >= ticksRequired) {
                         operatingTicks[i] = 0;
@@ -314,6 +332,7 @@ public List<SimpleMatterTank> getMatterTanks() {
                         }
                         slot.shrinkStack(1, Action.EXECUTE);
                         markForSave();
+                        ReplicateMekanism.LOGGER.info("Collapser slot {}: COMPLETED collapse of {}", i, stack.getItem());
                     }
                 } else {
                     if (operatingTicks[i] > 0) {
