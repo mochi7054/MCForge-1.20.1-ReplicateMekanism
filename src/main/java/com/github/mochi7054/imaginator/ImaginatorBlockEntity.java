@@ -48,7 +48,7 @@ import java.util.Map;
 import java.util.ArrayList;
 import java.util.Collections;
 
-public class ImaginatorBlockEntity extends TileEntityConfigurableMachine implements MenuProvider, mekanism.common.tile.interfaces.IUpgradeTile {
+public class ImaginatorBlockEntity extends TileEntityConfigurableMachine implements MenuProvider, mekanism.common.tile.interfaces.IUpgradeTile, mekanism.common.tile.interfaces.ITierUpgradable {
 
     public static final int BASE_TICKS_REQUIRED = 100;
     public static final mekanism.api.math.FloatingLong BASE_ENERGY_USAGE = mekanism.api.math.FloatingLong.createConst(50);

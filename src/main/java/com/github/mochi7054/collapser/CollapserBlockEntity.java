@@ -50,7 +50,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class CollapserBlockEntity extends TileEntityConfigurableMachine implements MenuProvider, mekanism.common.tile.interfaces.IUpgradeTile {
+public class CollapserBlockEntity extends TileEntityConfigurableMachine implements MenuProvider, mekanism.common.tile.interfaces.IUpgradeTile, mekanism.common.tile.interfaces.ITierUpgradable {
 
     public static final FloatingLong BASE_ENERGY_PER_TICK = FloatingLong.createConst(100);
     public static final int BASE_TICKS_REQUIRED = 100;
@@ -751,5 +751,80 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
     @Override
     public AbstractContainerMenu createMenu(int windowId, @NotNull Inventory playerInventory, @NotNull Player player) {
         return new CollapserMenu(windowId, playerInventory, this);
+    }
+
+    // ITierUpgradable Implementation
+    @Override
+    public void parseUpgradeData(mekanism.common.upgrade.IUpgradeData upgradeData) {
+        if (upgradeData instanceof CollapserUpgradeData data) {
+            this.energyContainer.setEnergy(data.energy);
+            this.sorting = data.sorting;
+            for (int i = 0; i < Math.min(this.inputSlots.size(), data.inputStacks.size()); i++) {
+                this.inputSlots.get(i).setStack(data.inputStacks.get(i));
+            }
+            this.energySlot.setStack(data.energySlotStack);
+            
+            var tanks = this.getMatterTanks();
+            for (int i = 0; i < Math.min(tanks.size(), data.matterAmounts.size()); i++) {
+                tanks.get(i).setStored(data.matterAmounts.get(i));
+            }
+            
+            for (mekanism.common.tile.component.ITileComponent component : this.getComponents()) {
+                component.read(data.componentNbt);
+            }
+            
+            if (data.operatingTicks != null && this.operatingTicks != null) {
+                System.arraycopy(data.operatingTicks, 0, this.operatingTicks, 0, Math.min(this.operatingTicks.length, data.operatingTicks.length));
+            }
+        }
+    }
+
+    @Override
+    public mekanism.common.upgrade.IUpgradeData getUpgradeData() {
+        List<ItemStack> inputs = new java.util.ArrayList<>();
+        for (InputInventorySlot slot : this.inputSlots) {
+            inputs.add(slot.getStack().copy());
+        }
+        ItemStack energyStack = this.energySlot.getStack().copy();
+        
+        List<Double> matterAmounts = new java.util.ArrayList<>();
+        for (com.github.mochi7054.fluid.SimpleMatterTank tank : this.getMatterTanks()) {
+            matterAmounts.add(tank.getStored());
+        }
+        
+        CompoundTag componentsTag = new CompoundTag();
+        for (mekanism.common.tile.component.ITileComponent component : this.getComponents()) {
+            component.write(componentsTag);
+        }
+        
+        return new CollapserUpgradeData(
+            this.energyContainer.getEnergy(),
+            inputs,
+            energyStack,
+            matterAmounts,
+            componentsTag,
+            this.operatingTicks != null ? this.operatingTicks.clone() : new int[0],
+            this.sorting
+        );
+    }
+
+    public static class CollapserUpgradeData implements mekanism.common.upgrade.IUpgradeData {
+        public final mekanism.api.math.FloatingLong energy;
+        public final List<ItemStack> inputStacks;
+        public final ItemStack energySlotStack;
+        public final List<Double> matterAmounts;
+        public final CompoundTag componentNbt;
+        public final int[] operatingTicks;
+        public final boolean sorting;
+        
+        public CollapserUpgradeData(mekanism.api.math.FloatingLong energy, List<ItemStack> inputStacks, ItemStack energySlotStack, List<Double> matterAmounts, CompoundTag componentNbt, int[] operatingTicks, boolean sorting) {
+            this.energy = energy;
+            this.inputStacks = inputStacks;
+            this.energySlotStack = energySlotStack;
+            this.matterAmounts = matterAmounts;
+            this.componentNbt = componentNbt;
+            this.operatingTicks = operatingTicks;
+            this.sorting = sorting;
+        }
     }
 }

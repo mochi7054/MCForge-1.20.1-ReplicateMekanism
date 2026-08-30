@@ -68,6 +68,15 @@ public class CollapserBlock extends BlockTile<CollapserBlockEntity, BlockTypeTil
                 mekanism.common.block.attribute.Attributes.SECURITY,
                 mekanism.common.block.attribute.Attributes.REDSTONE
         );
+
+        if (tier.getBaseTier() != null) {
+            blockType.add(new mekanism.common.block.attribute.AttributeTier<>(tier));
+        }
+
+        if (nextTierBlockSupplier != null) {
+            blockType.add(new mekanism.common.block.attribute.AttributeUpgradeable(nextTierBlockSupplier));
+        }
+
         return blockType;
     }
 
