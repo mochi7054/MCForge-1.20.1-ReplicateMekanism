@@ -1,0 +1,32 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.github.mochi7054.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "refmap": "replicatemekanism.refmap.json",
+  "mixins": [
+    "UpgradeMixin",
+    "UpgradeInvoker",
+    "UpgradeUtilsMixin",
+    "UpgradeInventorySlotMixin",
+    "BasicInventorySlotMixin",
+    "BasicFluidTankMixin",
+    "BasicChemicalTankMixin",
+    "BasicEnergyContainerMixin",
+    "CachedRecipeMixin",
+    "RecipeCacheLookupMonitorMixin",
+    "TileComponentUpgradeMixin",
+    "TileEntityDigitalMinerMixin",
+    "TileEntityGeneratorMixin",
+    "TileEntityFormulaicAssemblicatorMixin",
+    "MatterNetworkMixin",
+    "GuiConfigTypeTabMixin",
+    "GuiWindowMixin",
+    "GuiTexturedElementMixin"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

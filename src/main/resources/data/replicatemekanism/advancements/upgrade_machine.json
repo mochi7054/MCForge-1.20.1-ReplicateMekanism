@@ -1,0 +1,27 @@
+{
+  "parent": "replicatemekanism:replica_tier_installer",
+  "display": {
+    "icon": {
+      "item": "replicatemekanism:imaginator_basic"
+    },
+    "title": {
+      "translate": "advancements.replicatemekanism.upgrade_machine.title"
+    },
+    "description": {
+      "translate": "advancements.replicatemekanism.upgrade_machine.description"
+    },
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "upgraded": {
+      "trigger": "minecraft:impossible"
+    }
+  },
+  "requirements": [
+    [
+      "upgraded"
+    ]
+  ]
+}
