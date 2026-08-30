@@ -129,12 +129,54 @@ public class ImaginatorMenu extends MekanismTileContainer<ImaginatorBlockEntity>
     public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player player, int slotId) {
         if (slotId >= 0 && slotId < this.slots.size()) {
             net.minecraft.world.inventory.Slot slot = this.slots.get(slotId);
+            if (slot == null || !slot.hasItem()) {
+                return net.minecraft.world.item.ItemStack.EMPTY;
+            }
+
             if (isInputSlot(slot)) {
                 slot.set(net.minecraft.world.item.ItemStack.EMPTY);
                 this.broadcastChanges();
                 return net.minecraft.world.item.ItemStack.EMPTY;
             }
 
+            net.minecraft.world.item.ItemStack itemstack1 = slot.getItem();
+            net.minecraft.world.item.ItemStack itemstack = itemstack1.copy();
+
+            // 成果物スロット等、プレイヤーインベントリ以外のスロットからの Shift+クリック
+            if (!(slot instanceof mekanism.common.inventory.container.slot.MainInventorySlot) && 
+                !(slot instanceof mekanism.common.inventory.container.slot.HotBarSlot)) {
+                
+                int startPlayer = -1;
+                for (int s = 0; s < this.slots.size(); s++) {
+                    net.minecraft.world.inventory.Slot sl = this.slots.get(s);
+                    if (sl instanceof mekanism.common.inventory.container.slot.MainInventorySlot || 
+                        sl instanceof mekanism.common.inventory.container.slot.HotBarSlot) {
+                        if (startPlayer == -1) startPlayer = s;
+                    }
+                }
+
+                if (startPlayer != -1) {
+                    if (!this.moveItemStackTo(itemstack1, startPlayer, this.slots.size(), true)) {
+                        return net.minecraft.world.item.ItemStack.EMPTY;
+                    }
+                }
+
+                if (itemstack1.isEmpty()) {
+                    slot.set(net.minecraft.world.item.ItemStack.EMPTY);
+                } else {
+                    slot.setChanged();
+                }
+
+                if (itemstack1.getCount() == itemstack.getCount()) {
+                    return net.minecraft.world.item.ItemStack.EMPTY;
+                }
+
+                slot.onTake(player, itemstack1);
+                this.broadcastChanges();
+                return itemstack;
+            }
+
+            // プレイヤーインベントリからの Shift+クリック（ゴーストスロット設定）
             if (slot instanceof mekanism.common.inventory.container.slot.MainInventorySlot || 
                 slot instanceof mekanism.common.inventory.container.slot.HotBarSlot) {
                 

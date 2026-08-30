@@ -78,7 +78,7 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
     public CollapserBlockEntity(mekanism.common.registration.impl.BlockRegistryObject<?, ?> blockProvider, BlockPos pos, BlockState state) {
         super(blockProvider, pos, state);
 
-        int slotCount = getTier().getSlots();
+        int slotCount = inputSlots != null ? inputSlots.size() : getTier().getSlots();
         this.operatingTicks = new int[slotCount];
 
         configComponent = new TileComponentConfig(this, TransmissionType.ITEM, TransmissionType.ENERGY, TransmissionType.FLUID);
@@ -89,6 +89,20 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
             configComponent.setupItemIOConfig(inputSlots.get(slotIndex), null, energySlot);
         }
         configComponent.setupInputConfig(TransmissionType.ENERGY, energyContainer);
+
+        var energyConfig = configComponent.getConfig(TransmissionType.ENERGY);
+        if (energyConfig != null) {
+            for (mekanism.api.RelativeSide side : mekanism.api.RelativeSide.values()) {
+                energyConfig.setDataType(mekanism.common.tile.component.config.DataType.INPUT, side);
+            }
+        }
+
+        var itemConfig = configComponent.getConfig(TransmissionType.ITEM);
+        if (itemConfig != null) {
+            for (mekanism.api.RelativeSide side : mekanism.api.RelativeSide.values()) {
+                itemConfig.setDataType(mekanism.common.tile.component.config.DataType.INPUT, side);
+            }
+        }
 
         ejectorComponent.setOutputData(configComponent, TransmissionType.ITEM);
     }
@@ -242,20 +256,29 @@ public List<SimpleMatterTank> getMatterTanks() {
     @Override
     protected void onUpdateServer() {
         super.onUpdateServer();
-        if (energySlot != null) {
-            energySlot.fillContainerOrConvert();
-        }
+        try {
+            int slotCount = inputSlots != null ? inputSlots.size() : getTier().getSlots();
+            if (this.operatingTicks == null || this.operatingTicks.length != slotCount) {
+                this.operatingTicks = new int[slotCount];
+            }
 
-        if (this.sorting && inputSlots.size() > 1 && level != null && level.getGameTime() % 20 == 0) {
-            sortInputSlots();
-        }
+            if (energySlot != null) {
+                energySlot.fillContainerOrConvert();
+            }
 
-        if (MekanismUtils.canFunction(this)) {
-            processCollapsing();
-        } else if (level != null && level.getGameTime() % 40 == 0) {
-            ReplicateMekanism.LOGGER.info("Collapser: MekanismUtils.canFunction(this) is false.");
+            if (this.sorting && inputSlots != null && inputSlots.size() > 1 && level != null && level.getGameTime() % 20 == 0) {
+                sortInputSlots();
+            }
+
+            if (MekanismUtils.canFunction(this)) {
+                processCollapsing();
+            } else if (level != null && level.getGameTime() % 40 == 0) {
+                ReplicateMekanism.LOGGER.info("Collapser: MekanismUtils.canFunction(this) is false.");
+            }
+            ejectMatter();
+        } catch (Throwable t) {
+            ReplicateMekanism.LOGGER.error("Error in Collapser onUpdateServer", t);
         }
-        ejectMatter();
     }
 
     private void processCollapsing() {
