@@ -198,19 +198,25 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
         }
 
         @Override
-        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            this.customDraw(guiGraphics);
+        }
 
         @Override
         public void updateWidgetNarration(net.minecraft.client.gui.narration.NarrationElementOutput output) {}
 
         @Override
         public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            this.customDraw(guiGraphics);
+        }
+
+        private void customDraw(GuiGraphics guiGraphics) {
             guiGraphics.blit(REPLICATION_BACKGROUND, this.relativeX, this.relativeY, 177, 61, 22, 15, 256, 256);
             double progress = progressSupplier.getAsDouble();
             if (progress > 0) {
-                int width = (int) (progress * 22);
+                int width = (int) Math.round(progress * 22);
                 if (width > 0) {
-                    guiGraphics.blit(REPLICATION_BACKGROUND, this.relativeX, this.relativeY, 177, 77, width, 15, 256, 256);
+                    guiGraphics.blit(REPLICATION_BACKGROUND, this.relativeX, this.relativeY, 177, 77, Math.min(22, width), 15, 256, 256);
                 }
             }
         }
@@ -225,19 +231,25 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
         }
 
         @Override
-        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            this.customDraw(guiGraphics);
+        }
 
         @Override
         public void updateWidgetNarration(net.minecraft.client.gui.narration.NarrationElementOutput output) {}
 
         @Override
         public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            this.customDraw(guiGraphics);
+        }
+
+        private void customDraw(GuiGraphics guiGraphics) {
             guiGraphics.blit(PROGRESS_DOWN_TEXTURE, this.relativeX, this.relativeY, 0, 0, 8, 15, 16, 15);
             double progress = progressSupplier.getAsDouble();
             if (progress > 0) {
-                int height = (int) (progress * 15);
+                int height = (int) Math.round(progress * 15);
                 if (height > 0) {
-                    guiGraphics.blit(PROGRESS_DOWN_TEXTURE, this.relativeX, this.relativeY, 8, 0, 8, height, 16, 15);
+                    guiGraphics.blit(PROGRESS_DOWN_TEXTURE, this.relativeX, this.relativeY, 8, 0, 8, Math.min(15, height), 16, 15);
                 }
             }
         }
