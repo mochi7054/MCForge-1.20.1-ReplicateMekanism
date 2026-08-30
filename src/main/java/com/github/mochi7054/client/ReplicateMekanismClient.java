@@ -22,6 +22,11 @@ public class ReplicateMekanismClient {
             MenuScreens.register(ReplicateMekanism.IMAGINATOR_CONTAINER.get(), ImaginatorScreen::new);
             MenuScreens.register(ReplicateMekanism.FORENSIC_CHAMBER_CONTAINER.get(), ForensicChamberScreen::new);
         });
+
+        net.minecraftforge.fml.ModLoadingContext.get().registerExtensionPoint(
+                net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory.class,
+                () -> new net.minecraftforge.client.ConfigScreenHandler.ConfigScreenFactory((minecraft, screen) -> new com.github.mochi7054.client.gui.ReplicateConfigScreen(screen))
+        );
     }
 
     @SubscribeEvent
