@@ -142,7 +142,7 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
         }
     }
 
-    private static class CollapserGuiSlot extends GuiSlot {
+        private static class CollapserGuiSlot extends GuiSlot {
         private final Slot slot;
 
         public CollapserGuiSlot(SlotType type, mekanism.client.gui.IGuiWrapper gui, int x, int y, Slot slot) {
@@ -151,10 +151,30 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
         }
 
         @Override
-        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            if (!this.isRenderAboveSlots()) {
+                this.customDraw(guiGraphics);
+            }
+        }
 
         @Override
         public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            if (this.isRenderAboveSlots()) {
+                this.customDraw(guiGraphics);
+            }
+        }
+
+        private boolean isRenderAboveSlots() {
+            try {
+                java.lang.reflect.Field f = GuiSlot.class.getDeclaredField("renderAboveSlots");
+                f.setAccessible(true);
+                return f.getBoolean(this);
+            } catch (Exception e) {
+                return false;
+            }
+        }
+
+        private void customDraw(GuiGraphics guiGraphics) {
             guiGraphics.blit(CUSTOM_SLOT_TEXTURE, this.relativeX, this.relativeY, 0, 0, 18, 18, 18, 18);
             if (slot instanceof InventoryContainerSlot containerSlot) {
                 mekanism.common.inventory.container.slot.SlotOverlay overlay = containerSlot.getSlotOverlay();

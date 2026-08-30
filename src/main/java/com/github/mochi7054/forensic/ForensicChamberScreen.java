@@ -86,7 +86,7 @@ public class ForensicChamberScreen extends GuiConfigurableTile<ForensicChamberBl
         }
     }
 
-        private static class ReplicationGuiSlot extends GuiSlot {
+            private static class ReplicationGuiSlot extends GuiSlot {
         private final Slot slot;
 
         public ReplicationGuiSlot(SlotType type, mekanism.client.gui.IGuiWrapper gui, int x, int y, Slot slot) {
@@ -95,31 +95,39 @@ public class ForensicChamberScreen extends GuiConfigurableTile<ForensicChamberBl
         }
 
         @Override
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            if (!this.isRenderAboveSlots()) {
+                this.customDraw(guiGraphics);
+            }
+        }
+
+        @Override
         public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-            this.customDraw(guiGraphics);
+            if (this.isRenderAboveSlots()) {
+                this.customDraw(guiGraphics);
+            }
+        }
+
+        private boolean isRenderAboveSlots() {
+            try {
+                java.lang.reflect.Field f = GuiSlot.class.getDeclaredField("renderAboveSlots");
+                f.setAccessible(true);
+                return f.getBoolean(this);
+            } catch (Exception e) {
+                return false;
+            }
         }
 
         private void customDraw(GuiGraphics guiGraphics) {
             guiGraphics.blit(CUSTOM_SLOT_TEXTURE, this.relativeX, this.relativeY, 0, 0, 18, 18, 18, 18);
-            
             if (slot instanceof InventoryContainerSlot containerSlot) {
                 mekanism.common.inventory.container.slot.SlotOverlay overlay = containerSlot.getSlotOverlay();
                 if (overlay != null) {
-                    guiGraphics.blit(overlay.getTexture(), this.relativeX, this.relativeY, 0.0F, 0.0F, overlay.getWidth(), overlay.getHeight(), overlay.getWidth(), overlay.getHeight());
+                    guiGraphics.blit(overlay.getTexture(), this.relativeX, this.relativeY,
+                            0f, 0f, overlay.getWidth(), overlay.getHeight(),
+                            overlay.getWidth(), overlay.getHeight());
                 }
             }
-
-            boolean isChipInput = (this.relativeX == 73 && this.relativeY == 41);
-            boolean isChipOutput = (this.relativeX == 115 && this.relativeY == 41);
-            if ((isChipInput || isChipOutput) && !slot.hasItem()) {
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
-                guiGraphics.setColor(1.0F, 1.0F, 1.0F, 0.4F);
-                guiGraphics.blit(MEMORY_CHIP_GHOST_TEXTURE, this.relativeX + 1, this.relativeY + 1, 0, 0, 16, 16, 16, 16);
-                guiGraphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
-                RenderSystem.disableBlend();
-            }
-            
             this.drawContents(guiGraphics);
         }
     }

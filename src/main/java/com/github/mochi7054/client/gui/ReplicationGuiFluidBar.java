@@ -1,18 +1,13 @@
 package com.github.mochi7054.client.gui;
 
-import com.buuz135.replication.api.IMatterType;
 import com.github.mochi7054.fluid.SimpleMatterTank;
-import com.mojang.blaze3d.systems.RenderSystem;
 import mekanism.client.gui.IGuiWrapper;
 import mekanism.client.gui.element.GuiElement;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 
 public class ReplicationGuiFluidBar extends GuiElement {
-
-    private static final ResourceLocation REPLICATION_BACKGROUND = new ResourceLocation("replication", "textures/gui/background.png");
 
     private final SimpleMatterTank tank;
     private final boolean horizontal;
@@ -23,64 +18,89 @@ public class ReplicationGuiFluidBar extends GuiElement {
         this.horizontal = horizontal;
     }
 
-    
-
     @Override
     public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
 
     @Override
+    public void updateWidgetNarration(NarrationElementOutput output) {}
+
+    @Override
     public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        double stored = tank.getStored();
-        double capacity = tank.getCapacity();
+        int x = this.relativeX;
+        int y = this.relativeY;
+        int w = this.width;
+        int h = this.height;
 
-        if (capacity <= 0 || stored <= 0.001) {
-            return;
+        // Draw custom Replication dark background inside the bar
+        guiGraphics.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xFF181A24);
+
+        // Draw the matter level fill overlay
+        double max = tank.getCapacity();
+        double current = tank.getStored();
+        double ratio = max > 0 ? Math.min(1.0, Math.max(0.0, current / max)) : 0;
+
+        if (ratio > 0) {
+            int color = getMatterColor(tank.getMatterType());
+            if (horizontal) {
+                int fillWidth = (int) Math.round((w - 2) * ratio);
+                if (fillWidth > 0) {
+                    guiGraphics.fill(x + 1, y + 1, x + 1 + fillWidth, y + h - 1, color);
+                }
+            } else {
+                int fillHeight = (int) Math.round((h - 2) * ratio);
+                if (fillHeight > 0) {
+                    guiGraphics.fill(x + 1, y + h - 1 - fillHeight, x + w - 1, y + h - 1, color);
+                }
+            }
         }
 
-        double ratio = Math.min(1.0, Math.max(0.0, stored / capacity));
-        int barColor = getColorForMatter(tank.getMatterType());
-
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-
-        if (horizontal) {
-            int fillWidth = (int) Math.round(this.width * ratio);
-            if (fillWidth > 0) {
-                guiGraphics.fill(this.relativeX, this.relativeY, this.relativeX + fillWidth, this.relativeY + this.height, barColor);
-            }
-        } else {
-            int fillHeight = (int) Math.round(this.height * ratio);
-            if (fillHeight > 0) {
-                guiGraphics.fill(this.relativeX, this.relativeY + this.height - fillHeight, this.relativeX + this.width, this.relativeY + this.height, barColor);
-            }
-        }
-
-        RenderSystem.disableBlend();
+        // Draw Replication green border
+        drawReplicationBorder(guiGraphics);
     }
 
     @Override
     public void renderToolTip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         super.renderToolTip(guiGraphics, mouseX, mouseY);
-        IMatterType type = tank.getMatterType();
-        String name = type != null ? type.getName() : "Empty";
-        String text = String.format("%s: %.1f / %.1f", name, tank.getStored(), (double) tank.getCapacity());
-        this.displayTooltips(guiGraphics, mouseX, mouseY, Component.literal(text));
+        String name = tank.getMatterType() != null ? tank.getMatterType().getName() : "Empty";
+        if (name != null && !name.isEmpty()) {
+            name = name.substring(0, 1).toUpperCase() + name.substring(1).toLowerCase();
+        }
+        String txt = name + " Matter: " + (int) tank.getStored() + " / " + (int) tank.getCapacity();
+        this.displayTooltips(guiGraphics, mouseX, mouseY, Component.literal(txt));
     }
 
-    @Override
-    public void updateWidgetNarration(NarrationElementOutput output) {}
+    private int getMatterColor(com.buuz135.replication.api.IMatterType type) {
+        if (type == null) return 0xFFFFFFFF;
+        String name = type.getName().toLowerCase();
+        if (name.contains("earth")) return 0xFF5C3A21;
+        if (name.contains("nether")) return 0xFFB71C1C;
+        if (name.contains("organic")) return 0xFF2E7D32;
+        if (name.contains("ender")) return 0xFF004D40;
+        if (name.contains("metallic")) return 0xFF78909C;
+        if (name.contains("precious")) return 0xFFFBC02D;
+        if (name.contains("living")) return 0xFF81C784;
+        if (name.contains("quantum")) return 0xFF3F51B5;
+        return 0xFFFFFFFF;
+    }
 
-    private int getColorForMatter(IMatterType type) {
-        if (type == null) return 0xFF555555;
-        try {
-            float[] c = type.getColor().get();
-            if (c != null && c.length >= 3) {
-                int r = (int) (c[0] * 255.0f);
-                int g = (int) (c[1] * 255.0f);
-                int b = (int) (c[2] * 255.0f);
-                return 0xFF000000 | (r << 16) | (g << 8) | b;
-            }
-        } catch (Exception ignored) {}
-        return 0xFF38FF70;
+    private void drawReplicationBorder(GuiGraphics guiGraphics) {
+        int x = this.relativeX;
+        int y = this.relativeY;
+        int w = this.width;
+        int h = this.height;
+
+        int lightGreen = 0xFF72E567;
+        int darkGreen = 0xFF158C82;
+        int cornerColor = 0xFF19A683;
+
+        guiGraphics.fill(x + 1, y, x + w - 1, y + 1, darkGreen);
+        guiGraphics.fill(x, y + 1, x + 1, y + h - 1, darkGreen);
+        guiGraphics.fill(x + 1, y + h - 1, x + w - 1, y + h, lightGreen);
+        guiGraphics.fill(x + w - 1, y + 1, x + w, y + h - 1, lightGreen);
+
+        guiGraphics.fill(x, y, x + 1, y + 1, cornerColor);
+        guiGraphics.fill(x + w - 1, y, x + w, y + 1, cornerColor);
+        guiGraphics.fill(x, y + h - 1, x + 1, y + h, cornerColor);
+        guiGraphics.fill(x + w - 1, y + h - 1, x + w, y + h, cornerColor);
     }
 }

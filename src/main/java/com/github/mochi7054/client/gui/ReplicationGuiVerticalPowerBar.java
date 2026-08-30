@@ -1,65 +1,62 @@
 package com.github.mochi7054.client.gui;
 
-import com.github.mochi7054.fluid.SimpleMatterTank;
-import com.mojang.blaze3d.systems.RenderSystem;
-import mekanism.api.math.FloatingLong;
+import mekanism.api.energy.IEnergyContainer;
 import mekanism.client.gui.IGuiWrapper;
-import mekanism.client.gui.element.GuiElement;
-import mekanism.common.capabilities.energy.MachineEnergyContainer;
+import mekanism.client.gui.element.bar.GuiVerticalPowerBar;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
-public class ReplicationGuiVerticalPowerBar extends GuiElement {
+public class ReplicationGuiVerticalPowerBar extends GuiVerticalPowerBar {
 
-    private static final ResourceLocation REPLICATION_BACKGROUND = new ResourceLocation("replication", "textures/gui/background.png");
+    private static final ResourceLocation POWER_BAR_OVERLAY = new ResourceLocation("replicatemekanism", "textures/gui/bar/vertical_power.png");
 
-    private final MachineEnergyContainer<?> energyContainer;
-
-    public ReplicationGuiVerticalPowerBar(IGuiWrapper gui, MachineEnergyContainer<?> energyContainer, int x, int y, int height) {
-        super(gui, x, y, 4, height);
-        this.energyContainer = energyContainer;
+    public ReplicationGuiVerticalPowerBar(IGuiWrapper gui, IEnergyContainer container, int x, int y, int height) {
+        super(gui, container, x, y, height);
     }
-
-    
-
-    @Override
-    public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
 
     @Override
     public void drawBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-        if (energyContainer == null) return;
+        int x = this.relativeX;
+        int y = this.relativeY;
+        int w = 6;
+        int h = this.height;
 
-        FloatingLong energy = energyContainer.getEnergy();
-        FloatingLong max = energyContainer.getMaxEnergy();
+        // Draw custom Replication dark background inside the bar
+        guiGraphics.fill(x + 1, y + 1, x + w - 1, y + h - 1, 0xFF181A24);
 
-        if (max.isZero()) return;
-
-        double ratio = Math.min(1.0, Math.max(0.0, energy.divide(max).doubleValue()));
-        int fillHeight = (int) Math.round(this.height * ratio);
-
-        RenderSystem.enableBlend();
-        RenderSystem.defaultBlendFunc();
-
-        if (fillHeight > 0) {
-            int greenColor = 0xFF38FF70;
-            guiGraphics.fill(this.relativeX, this.relativeY + this.height - fillHeight, this.relativeX + this.width, this.relativeY + this.height, greenColor);
+        // Draw the energy fill overlay
+        double level = getHandler().getLevel();
+        if (level > 0) {
+            renderBarOverlay(guiGraphics, mouseX, mouseY, partialTicks, level);
         }
 
-        RenderSystem.disableBlend();
+        // Draw Replication green border
+        drawReplicationBorder(guiGraphics);
     }
 
     @Override
-    public void renderToolTip(GuiGraphics guiGraphics, int mouseX, int mouseY) {
-        super.renderToolTip(guiGraphics, mouseX, mouseY);
-        if (energyContainer != null) {
-            String energyStr = mekanism.common.util.MekanismUtils.getEnergyDisplayShort(energyContainer.getEnergy()).getString();
-            String maxStr = mekanism.common.util.MekanismUtils.getEnergyDisplayShort(energyContainer.getMaxEnergy()).getString();
-            this.displayTooltips(guiGraphics, mouseX, mouseY, Component.literal(energyStr + " / " + maxStr));
-        }
+    protected ResourceLocation getResource() {
+        return POWER_BAR_OVERLAY;
     }
 
-    @Override
-    public void updateWidgetNarration(NarrationElementOutput output) {}
+    private void drawReplicationBorder(GuiGraphics guiGraphics) {
+        int x = this.relativeX;
+        int y = this.relativeY;
+        int w = 6;
+        int h = this.height;
+
+        int lightGreen = 0xFF72E567;
+        int darkGreen = 0xFF158C82;
+        int cornerColor = 0xFF19A683;
+
+        guiGraphics.fill(x + 1, y, x + w - 1, y + 1, darkGreen);
+        guiGraphics.fill(x, y + 1, x + 1, y + h - 1, darkGreen);
+        guiGraphics.fill(x + 1, y + h - 1, x + w - 1, y + h, lightGreen);
+        guiGraphics.fill(x + w - 1, y + 1, x + w, y + h - 1, lightGreen);
+
+        guiGraphics.fill(x, y, x + 1, y + 1, cornerColor);
+        guiGraphics.fill(x + w - 1, y, x + w, y + 1, cornerColor);
+        guiGraphics.fill(x, y + h - 1, x + 1, y + h, cornerColor);
+        guiGraphics.fill(x + w - 1, y + h - 1, x + w, y + h, cornerColor);
+    }
 }
