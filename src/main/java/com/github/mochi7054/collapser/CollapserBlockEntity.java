@@ -13,8 +13,11 @@ import mekanism.api.IContentsListener;
 import mekanism.api.Upgrade;
 import mekanism.api.math.FloatingLong;
 import mekanism.common.capabilities.energy.MachineEnergyContainer;
+import mekanism.common.capabilities.fluid.BasicFluidTank;
 import mekanism.common.capabilities.holder.energy.EnergyContainerHelper;
 import mekanism.common.capabilities.holder.energy.IEnergyContainerHolder;
+import mekanism.common.capabilities.holder.fluid.FluidTankHelper;
+import mekanism.common.capabilities.holder.fluid.IFluidTankHolder;
 import mekanism.common.capabilities.holder.slot.IInventorySlotHolder;
 import mekanism.common.capabilities.holder.slot.InventorySlotHelper;
 import mekanism.common.inventory.container.MekanismContainer;
@@ -25,6 +28,7 @@ import mekanism.common.inventory.slot.InputInventorySlot;
 import mekanism.common.lib.transmitter.TransmissionType;
 import mekanism.common.tile.component.TileComponentEjector;
 import mekanism.common.tile.component.TileComponentConfig;
+import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.tile.prefab.TileEntityConfigurableMachine;
 import mekanism.common.util.MekanismUtils;
 import net.minecraft.core.BlockPos;
@@ -44,16 +48,24 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 public class CollapserBlockEntity extends TileEntityConfigurableMachine implements MenuProvider, mekanism.common.tile.interfaces.IUpgradeTile {
 
     public static final FloatingLong BASE_ENERGY_PER_TICK = FloatingLong.createConst(100);
-    public static final int BASE_TICKS_PER_OPERATION = 100;
+    public static final int BASE_TICKS_REQUIRED = 100;
+
+    public int[] operatingTicks;
+    public int ticksRequired = BASE_TICKS_REQUIRED;
+    public boolean sorting = false;
 
     public MachineEnergyContainer<CollapserBlockEntity> energyContainer;
-    public List<InputInventorySlot> inputSlots = new ArrayList<>();
-    public EnergyInventorySlot energySlot;
 
+    // Replication Network elements
+    private com.buuz135.replication.network.DefaultMatterNetworkElement networkElement = null;
+    private com.buuz135.replication.network.MatterNetwork currentNetwork = null;
+
+    // 8種類のマタータンク
     public SimpleMatterTank earthTank;
     public SimpleMatterTank netherTank;
     public SimpleMatterTank organicTank;
@@ -62,28 +74,51 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
     public SimpleMatterTank preciousTank;
     public SimpleMatterTank livingTank;
     public SimpleMatterTank quantumTank;
-    public mekanism.common.capabilities.fluid.BasicFluidTank dummyFluidTank;
+    public BasicFluidTank dummyFluidTank;
 
     public List<SimpleMatterTank> getMatterTanks() {
-        return List.of(earthTank, netherTank, organicTank, enderTank, metallicTank, preciousTank, livingTank, quantumTank);
+        return List.of(earthTank, netherTank, organicTank, enderTank,
+                metallicTank, preciousTank, livingTank, quantumTank);
     }
 
-    public int[] operatingTicks;
-    public boolean sorting = false;
+    public List<InputInventorySlot> inputSlots;
+    private EnergyInventorySlot energySlot;
 
-    @Override
-    public mekanism.common.tile.component.TileComponentUpgrade getComponent() { 
-        return upgradeComponent; 
+    public ReplicaTier getTier() {
+        try {
+            if (getBlockState() != null && getBlockState().getBlock() instanceof CollapserBlock collapserBlock) {
+                return collapserBlock.getTier();
+            }
+        } catch (Exception ignored) {}
+        try {
+            if (getBlockType() instanceof CollapserBlock collapserBlock) {
+                return collapserBlock.getTier();
+            }
+        } catch (Exception ignored) {}
+        return ReplicaTier.STANDARD;
+    }
+
+    private ReplicaTier getTierSafe() {
+        return getTier();
+    }
+
+    public ReplicaTier getReplicaTier() {
+        return getTier();
     }
 
     @Override
-    public java.util.Set<mekanism.api.Upgrade> getSupportedUpgrade() {
+    public TileComponentUpgrade getComponent() {
+        return upgradeComponent;
+    }
+
+    @Override
+    public java.util.Set<Upgrade> getSupportedUpgrade() {
         return java.util.EnumSet.of(Upgrade.SPEED, Upgrade.ENERGY);
     }
 
     @Override
-    public void recalculateUpgrades(Upgrade upgrade) { 
-        super.recalculateUpgrades(upgrade); 
+    public void recalculateUpgrades(Upgrade upgrade) {
+        super.recalculateUpgrades(upgrade);
     }
 
     public static mekanism.common.registration.impl.BlockRegistryObject<?, ?> getProvider(BlockState state) {
@@ -106,19 +141,16 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
     public CollapserBlockEntity(mekanism.common.registration.impl.BlockRegistryObject<?, ?> blockProvider, BlockPos pos, BlockState state) {
         super(blockProvider, pos, state);
 
-        upgradeComponent = new mekanism.common.tile.component.TileComponentUpgrade(this);
+        upgradeComponent = new TileComponentUpgrade(this);
         upgradeComponent.setSupported(Upgrade.SPEED);
         upgradeComponent.setSupported(Upgrade.ENERGY);
         if (ReplicateMekanism.REPLICA_UPGRADE_TYPE != null) {
             upgradeComponent.setSupported(ReplicateMekanism.REPLICA_UPGRADE_TYPE);
         }
 
-        int slotCount = inputSlots != null ? inputSlots.size() : getTier().getSlots();
-        this.operatingTicks = new int[slotCount];
-
         configComponent = new TileComponentConfig(this, TransmissionType.ITEM, TransmissionType.ENERGY, TransmissionType.FLUID);
-        ejectorComponent = new TileComponentEjector(this);
-
+        
+        // ITEM config: input only, no output
         configComponent.setupItemIOConfig(
             new ArrayList<>(inputSlots),
             Collections.emptyList(),
@@ -126,7 +158,6 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
             false
         );
         configComponent.setupInputConfig(TransmissionType.ENERGY, energyContainer);
-
         var energyConfig = configComponent.getConfig(TransmissionType.ENERGY);
         if (energyConfig != null) {
             for (mekanism.api.RelativeSide side : mekanism.api.RelativeSide.values()) {
@@ -141,7 +172,7 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
             }
         }
 
-        // Add FLUID configuration
+        // Add FLUID configuration (reused for Matter)
         configComponent.setupOutputConfig(TransmissionType.FLUID, dummyFluidTank);
         var fluidConfig = configComponent.getConfig(TransmissionType.FLUID);
         if (fluidConfig != null) {
@@ -152,82 +183,8 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
             }
         }
 
+        ejectorComponent = new TileComponentEjector(this);
         ejectorComponent.setOutputData(configComponent, TransmissionType.ITEM);
-    }
-
-    public ReplicaTier getTier() {
-        try {
-            if (getBlockState() != null && getBlockState().getBlock() instanceof CollapserBlock collapserBlock) {
-                return collapserBlock.getTier();
-            }
-        } catch (Exception ignored) {}
-        try {
-            if (getBlockType() instanceof CollapserBlock collapserBlock) {
-                return collapserBlock.getTier();
-            }
-        } catch (Exception ignored) {}
-        return ReplicaTier.STANDARD;
-    }
-
-    public ReplicaTier getReplicaTier() {
-        return getTier();
-    }
-
-
-    public static MatterCompound getMatterCompoundSafe(ItemStack stack) {
-        if (stack.isEmpty()) return null;
-        try {
-            MatterCompound compound = ReplicationCalculation.getMatterCompound(stack);
-            if (compound != null && !compound.getValues().isEmpty()) {
-                return compound;
-            }
-        } catch (Throwable ignored) {}
-        try {
-            MatterCompound clientCompound = com.buuz135.replication.calculation.client.ClientReplicationCalculation.getMatterCompound(stack);
-            if (clientCompound != null && !clientCompound.getValues().isEmpty()) {
-                return clientCompound;
-            }
-        } catch (Throwable ignored) {}
-        return null;
-    }
-
-    public double getProgress(int slotIndex) {
-        if (slotIndex >= 0 && slotIndex < operatingTicks.length) {
-            int ticks = MekanismUtils.getTicks(this, BASE_TICKS_PER_OPERATION);
-            return (double) operatingTicks[slotIndex] / (double) Math.max(1, ticks);
-        }
-        return 0.0;
-    }
-
-        public int getSlotX(int index) {
-        ReplicaTier tier = getTier();
-        if (tier == ReplicaTier.STANDARD) return 16;
-        int startX;
-        int gap;
-        if (tier == ReplicaTier.BASIC) {
-            startX = 55;
-            gap = 38;
-        } else if (tier == ReplicaTier.ADVANCED) {
-            startX = 35;
-            gap = 26;
-        } else if (tier == ReplicaTier.ELITE) {
-            startX = 32;
-            gap = 19;
-        } else { // ULTIMATE
-            startX = 30;
-            gap = 19;
-        }
-        return startX + index * gap;
-    }
-
-    @NotNull
-    @Override
-    public Component getDisplayName() { return getName(); }
-
-    @NotNull
-    @Override
-    public Component getName() {
-        return Component.translatable("container.replicatemekanism.collapser_" + getTier().getName());
     }
 
     @NotNull
@@ -241,8 +198,8 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
 
     @NotNull
     @Override
-    protected mekanism.common.capabilities.holder.fluid.IFluidTankHolder getInitialFluidTanks(IContentsListener listener) {
-        int capacity = getTier().getTankCapacity();
+    protected IFluidTankHolder getInitialFluidTanks(IContentsListener listener) {
+        int capacity = getTierSafe().getTankCapacity();
         earthTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.EARTH.get(), capacity);
         netherTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.NETHER.get(), capacity);
         organicTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.ORGANIC.get(), capacity);
@@ -251,23 +208,21 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
         preciousTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.PRECIOUS.get(), capacity);
         livingTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.LIVING.get(), capacity);
         quantumTank = new SimpleMatterTank(com.buuz135.replication.ReplicationRegistry.Matter.QUANTUM.get(), capacity);
-        mekanism.common.capabilities.holder.fluid.FluidTankHelper builder = mekanism.common.capabilities.holder.fluid.FluidTankHelper.forSideWithConfig(this::getDirection, this::getConfig);
-        dummyFluidTank = mekanism.common.capabilities.fluid.BasicFluidTank.create(1000, listener);
+
+        dummyFluidTank = BasicFluidTank.create(1000, listener);
+        FluidTankHelper builder = FluidTankHelper.forSideWithConfig(this::getDirection, this::getConfig);
         builder.addTank(dummyFluidTank);
         return builder.build();
     }
 
-            @NotNull
+    @NotNull
     @Override
     protected IInventorySlotHolder getInitialInventory(IContentsListener listener) {
         InventorySlotHelper builder = InventorySlotHelper.forSideWithConfig(this::getDirection, this::getConfig);
-
-        ReplicaTier tier = getTier();
-        int slotCount = tier.getSlots();
-        if (this.operatingTicks == null || this.operatingTicks.length != slotCount) {
-            this.operatingTicks = new int[slotCount];
-        }
-
+        ReplicaTier tier = getTierSafe();
+        int slotCount = tier.getSlotCount();
+        this.operatingTicks = new int[slotCount];
+        
         int[][] inputCoords = new int[slotCount][2];
         int energyX;
         int energyY;
@@ -301,13 +256,16 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
         }
 
         if (inputSlots == null) {
-            inputSlots = new java.util.ArrayList<>();
+            inputSlots = new ArrayList<>();
         } else {
             inputSlots.clear();
         }
 
         for (int i = 0; i < slotCount; i++) {
-            InputInventorySlot inputSlot = InputInventorySlot.at(stack -> !stack.isEmpty(), listener, inputCoords[i][0], inputCoords[i][1]);
+            InputInventorySlot inputSlot = InputInventorySlot.at(stack -> {
+                MatterCompound compound = getMatterCompoundSafe(stack);
+                return compound != null && !compound.getValues().isEmpty();
+            }, listener, inputCoords[i][0], inputCoords[i][1]);
             inputSlots.add(inputSlot);
             builder.addSlot(inputSlot);
         }
@@ -315,6 +273,94 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
         energySlot = EnergyInventorySlot.fillOrConvert(energyContainer, this::getLevel, listener, energyX, energyY);
         builder.addSlot(energySlot);
         return builder.build();
+    }
+
+    @Nullable
+    public com.buuz135.replication.network.MatterNetwork getNetwork() {
+        if (this.level == null) return null;
+        for (Direction dir : Direction.values()) {
+            BlockPos adjacent = this.worldPosition.relative(dir);
+            net.minecraft.world.level.block.entity.BlockEntity adjacentBe = this.level.getBlockEntity(adjacent);
+            if (adjacentBe instanceof com.buuz135.replication.block.tile.NetworkBlockEntity<?> networkBe) {
+                com.buuz135.replication.network.MatterNetwork net = networkBe.getNetwork();
+                if (net != null) {
+                    return net;
+                }
+            }
+        }
+        return null;
+    }
+
+    public static MatterCompound getMatterCompoundSafe(ItemStack stack) {
+        if (stack.isEmpty()) return null;
+        try {
+            MatterCompound compound = ReplicationCalculation.getMatterCompound(stack);
+            if (compound != null && !compound.getValues().isEmpty()) {
+                return compound;
+            }
+        } catch (Throwable ignored) {}
+        try {
+            MatterCompound clientCompound = com.buuz135.replication.calculation.client.ClientReplicationCalculation.getMatterCompound(stack);
+            if (clientCompound != null && !clientCompound.getValues().isEmpty()) {
+                return clientCompound;
+            }
+        } catch (Throwable ignored) {}
+        return null;
+    }
+
+    public SimpleMatterTank getTankForMatterType(IMatterType matterType) {
+        if (matterType == null) return null;
+        String name = matterType.getName();
+        if (name == null) return null;
+        name = name.toLowerCase();
+        if (name.contains("earth")) return earthTank;
+        if (name.contains("nether")) return netherTank;
+        if (name.contains("organic")) return organicTank;
+        if (name.contains("ender")) return enderTank;
+        if (name.contains("metallic")) return metallicTank;
+        if (name.contains("precious")) return preciousTank;
+        if (name.contains("living")) return livingTank;
+        if (name.contains("quantum")) return quantumTank;
+        return null;
+    }
+
+    public double getProgress(int slotIndex) {
+        if (operatingTicks != null && slotIndex >= 0 && slotIndex < operatingTicks.length) {
+            int ticks = MekanismUtils.getTicks(this, BASE_TICKS_REQUIRED);
+            return (double) operatingTicks[slotIndex] / (double) Math.max(1, ticks);
+        }
+        return 0.0;
+    }
+
+    public int getSlotX(int index) {
+        ReplicaTier tier = getTier();
+        if (tier == ReplicaTier.STANDARD) return 16;
+        int startX;
+        int gap;
+        if (tier == ReplicaTier.BASIC) {
+            startX = 55;
+            gap = 38;
+        } else if (tier == ReplicaTier.ADVANCED) {
+            startX = 35;
+            gap = 26;
+        } else if (tier == ReplicaTier.ELITE) {
+            startX = 32;
+            gap = 19;
+        } else { // ULTIMATE
+            startX = 30;
+            gap = 19;
+        }
+        return startX + index * gap;
+    }
+
+    @NotNull
+    @Override
+    public Component getDisplayName() { return getName(); }
+
+    @NotNull
+    @Override
+    public Component getName() {
+        return Component.translatable("container.replicatemekanism.collapser_" + getTier().getName());
     }
 
     @Override
@@ -330,96 +376,87 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
                 energySlot.fillContainerOrConvert();
             }
 
-            if (this.sorting && inputSlots != null && inputSlots.size() > 1 && level != null && level.getGameTime() % 20 == 0) {
-                sortInputSlots();
+            com.buuz135.replication.network.MatterNetwork network = getNetwork();
+            if (network != currentNetwork) {
+                if (networkElement != null) {
+                    try {
+                        networkElement.leaveNetwork();
+                    } catch (Exception ignored) {}
+                    networkElement = null;
+                }
+                currentNetwork = network;
+                if (currentNetwork != null && level != null) {
+                    networkElement = new com.buuz135.replication.network.DefaultMatterNetworkElement(level, worldPosition);
+                    networkElement.joinNetwork(currentNetwork);
+                }
             }
+
+            ticksRequired = MekanismUtils.getTicks(this, BASE_TICKS_REQUIRED);
+            FloatingLong energyUsage = MekanismUtils.getEnergyPerTick(this, BASE_ENERGY_PER_TICK);
+
+            boolean[] canOperate = new boolean[inputSlots.size()];
+            MatterCompound[] slotCompounds = new MatterCompound[inputSlots.size()];
 
             if (MekanismUtils.canFunction(this)) {
-                processCollapsing();
-            } else if (level != null && level.getGameTime() % 40 == 0) {
-                ReplicateMekanism.LOGGER.info("Collapser: MekanismUtils.canFunction(this) is false.");
-            }
-            ejectMatter();
-        } catch (Throwable t) {
-            ReplicateMekanism.LOGGER.error("Error in Collapser onUpdateServer", t);
-        }
-    }
+                for (int i = 0; i < inputSlots.size(); i++) {
+                    ItemStack inputStack = inputSlots.get(i).getStack();
+                    if (!inputStack.isEmpty()) {
+                        MatterCompound compound = getMatterCompoundSafe(inputStack);
 
-    private void processCollapsing() {
-        FloatingLong energyUsage = MekanismUtils.getEnergyPerTick(this, BASE_ENERGY_PER_TICK);
-        int ticksRequired = MekanismUtils.getTicks(this, BASE_TICKS_PER_OPERATION);
+                        if (compound != null && !compound.getValues().isEmpty()) {
+                            boolean allTanksHaveSpace = true;
+                            for (Map.Entry<IMatterType, MatterValue> entry : compound.getValues().entrySet()) {
+                                IMatterType matterType = entry.getKey();
+                                double amount = entry.getValue().getAmount();
+                                SimpleMatterTank targetTank = getTankForMatterType(matterType);
+                                if (targetTank == null || targetTank.getCapacity() - targetTank.getStored() < amount - 0.0001) {
+                                    allTanksHaveSpace = false;
+                                    break;
+                                }
+                            }
 
-        boolean anyOperating = false;
-        boolean wasActive = getActive();
-
-        for (int i = 0; i < inputSlots.size(); i++) {
-            InputInventorySlot slot = inputSlots.get(i);
-            ItemStack stack = slot.getStack();
-
-            if (stack.isEmpty()) {
-                if (operatingTicks[i] > 0) {
-                    operatingTicks[i] = 0;
-                    markForSave();
-                }
-                continue;
-            }
-
-            MatterCompound compound = getMatterCompoundSafe(stack);
-            if (compound == null || compound.getValues().isEmpty()) {
-                if (level != null && level.getGameTime() % 40 == 0) {
-                    ReplicateMekanism.LOGGER.info("Collapser slot {}: item {} has no matter compound!", i, stack.getItem());
-                }
-                if (operatingTicks[i] > 0) {
-                    operatingTicks[i] = 0;
-                    markForSave();
-                }
-                continue;
-            }
-
-            boolean allTanksHaveSpace = true;
-            for (MatterValue value : compound.getValues().values()) {
-                IMatterType matterType = value.getMatter();
-                SimpleMatterTank tank = getTankForType(matterType);
-                if (tank == null || tank.getNeeded() < value.getAmount() - 0.0001) {
-                    allTanksHaveSpace = false;
-                    if (level != null && level.getGameTime() % 40 == 0) {
-                        ReplicateMekanism.LOGGER.info("Collapser slot {}: tank for {} is full! needed={}", i, matterType.getName(), tank != null ? tank.getNeeded() : -1);
-                    }
-                    break;
-                }
-            }
-
-            if (allTanksHaveSpace) {
-                boolean hasEnergy = energyContainer.getEnergy().greaterOrEqual(energyUsage);
-                if (!hasEnergy && level != null && level.getGameTime() % 40 == 0) {
-                    ReplicateMekanism.LOGGER.info("Collapser slot {}: Not enough energy! stored={}, usage={}", i, energyContainer.getEnergy(), energyUsage);
-                }
-                if (hasEnergy) {
-                    energyContainer.extract(energyUsage, Action.EXECUTE, AutomationType.INTERNAL);
-                    operatingTicks[i]++;
-                    anyOperating = true;
-
-                    if (level != null && level.getGameTime() % 20 == 0) {
-                        ReplicateMekanism.LOGGER.info("Collapser slot {}: operating progress {}/{}", i, operatingTicks[i], ticksRequired);
-                    }
-
-                    if (operatingTicks[i] >= ticksRequired) {
-                        operatingTicks[i] = 0;
-
-                        int upgradeCount = upgradeComponent != null ? upgradeComponent.getUpgrades(ReplicateMekanism.REPLICA_UPGRADE_TYPE) : 0;
-                        double multiplier = (double) (1 << upgradeCount);
-
-                        for (MatterValue value : compound.getValues().values()) {
-                            IMatterType matterType = value.getMatter();
-                            SimpleMatterTank tank = getTankForType(matterType);
-                            if (tank != null) {
-                                tank.fillDouble(value.getAmount() * multiplier,
-                                        net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+                            if (allTanksHaveSpace) {
+                                canOperate[i] = true;
+                                slotCompounds[i] = compound;
                             }
                         }
-                        slot.shrinkStack(1, Action.EXECUTE);
-                        markForSave();
-                        ReplicateMekanism.LOGGER.info("Collapser slot {}: COMPLETED collapse of {}", i, stack.getItem());
+                    }
+                }
+            }
+
+            boolean anyOperating = false;
+            boolean wasActive = getActive();
+
+            for (int i = 0; i < inputSlots.size(); i++) {
+                if (canOperate[i]) {
+                    if (energyContainer.getEnergy().greaterOrEqual(energyUsage)) {
+                        energyContainer.extract(energyUsage, Action.EXECUTE, AutomationType.INTERNAL);
+                        operatingTicks[i]++;
+                        anyOperating = true;
+
+                        if (operatingTicks[i] >= ticksRequired) {
+                            operatingTicks[i] = 0;
+                            MatterCompound compound = slotCompounds[i];
+                            if (compound != null) {
+                                int upgradeCount = upgradeComponent != null ? upgradeComponent.getUpgrades(ReplicateMekanism.REPLICA_UPGRADE_TYPE) : 0;
+                                double multiplier = (double) (1 << upgradeCount);
+                                for (Map.Entry<IMatterType, MatterValue> entry : compound.getValues().entrySet()) {
+                                    IMatterType matterType = entry.getKey();
+                                    double amount = entry.getValue().getAmount() * multiplier;
+                                    SimpleMatterTank targetTank = getTankForMatterType(matterType);
+                                    if (targetTank != null) {
+                                        targetTank.fillDouble(amount, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+                                    }
+                                }
+                                inputSlots.get(i).shrinkStack(1, Action.EXECUTE);
+                                markForSave();
+                            }
+                        }
+                    } else {
+                        if (operatingTicks[i] > 0) {
+                            operatingTicks[i] = Math.max(0, operatingTicks[i] - 2);
+                            markForSave();
+                        }
                     }
                 } else {
                     if (operatingTicks[i] > 0) {
@@ -427,34 +464,23 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
                         markForSave();
                     }
                 }
-            } else {
-                if (operatingTicks[i] > 0) {
-                    operatingTicks[i] = Math.max(0, operatingTicks[i] - 2);
-                    markForSave();
-                }
             }
-        }
 
-        setActive(anyOperating);
-        if (wasActive != getActive()) {
-            markForSave();
-        }
-    }
+            setActive(anyOperating);
+            if (wasActive != getActive()) {
+                markForSave();
+            }
 
-    private SimpleMatterTank getTankForType(IMatterType matterType) {
-        if (matterType == null) return null;
-        String name = matterType.getName().toLowerCase();
-        return switch (name) {
-            case "earth" -> earthTank;
-            case "nether" -> netherTank;
-            case "organic" -> organicTank;
-            case "ender" -> enderTank;
-            case "metallic" -> metallicTank;
-            case "precious" -> preciousTank;
-            case "living" -> livingTank;
-            case "quantum" -> quantumTank;
-            default -> null;
-        };
+            // 自動分配: BASIC以上のティアで sorting が有効なら毎 tick 実行
+            if (sorting && inputSlots.size() > 1 && level != null && level.getGameTime() % 20 == 0) {
+                sortInputSlots();
+            }
+
+            // 自動排出 (Auto-Eject)
+            ejectMatter();
+        } catch (Throwable t) {
+            ReplicateMekanism.LOGGER.error("Error in Collapser onUpdateServer", t);
+        }
     }
 
     private void ejectMatter() {
@@ -463,11 +489,11 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
         mekanism.common.tile.component.TileComponentConfig sideConfig = this.getConfig();
         if (sideConfig == null) return;
 
-        mekanism.common.tile.component.config.ConfigInfo info = sideConfig.getConfig(TransmissionType.FLUID);
+        var info = sideConfig.getConfig(TransmissionType.FLUID);
         if (info == null || !info.isEjecting()) return;
 
         for (Direction dir : Direction.values()) {
-            mekanism.common.tile.component.config.DataType dataType = info.getDataType(mekanism.api.RelativeSide.fromDirections(getDirection(), dir));
+            var dataType = info.getDataType(mekanism.api.RelativeSide.fromDirections(getDirection(), dir));
             if (dataType == mekanism.common.tile.component.config.DataType.OUTPUT || 
                 dataType == mekanism.common.tile.component.config.DataType.INPUT_OUTPUT) {
                 
@@ -481,13 +507,13 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
                             com.buuz135.replication.api.matter_fluid.MatterStack stored = tank.getMatter();
                             if (stored != null && !stored.isEmpty() && stored.getAmount() > 0) {
                                 for (var component : networkBE.getMatterTankComponents()) {
-                                    com.buuz135.replication.api.matter_fluid.MatterStack compStored = component.getMatter();
+                                    var compStored = component.getMatter();
                                     if (compStored == null || compStored.isEmpty() || 
                                         (compStored.getMatterType() != null && stored.getMatterType() != null &&
                                          compStored.getMatterType().getName().equalsIgnoreCase(stored.getMatterType().getName()))) {
                                         double filled = component.fill(stored, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE);
                                         if (filled > 0) {
-                                            tank.drain((int) Math.round(filled), net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+                                            tank.drainDouble(filled, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
                                             component.fill(new com.buuz135.replication.api.matter_fluid.MatterStack(stored.getMatterType(), (int) Math.round(filled)), 
                                                 net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
                                             markForSave();
@@ -497,92 +523,6 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
                                     }
                                 }
                                 if (ejected) break;
-                            }
-                        }
-
-                        if (!ejected) {
-                            com.buuz135.replication.network.MatterNetwork matterNetwork = networkBE.getNetwork();
-                            if (matterNetwork != null) {
-                                java.util.List<com.hrznstudio.titanium.block_network.element.NetworkElement> targets = new java.util.ArrayList<>();
-                                targets.addAll(matterNetwork.getMatterStacksHolders());
-                                targets.addAll(matterNetwork.getMatterStacksConsumers());
-                                for (SimpleMatterTank tank : getMatterTanks()) {
-                                    com.buuz135.replication.api.matter_fluid.MatterStack stored = tank.getMatter();
-                                    if (stored != null && !stored.isEmpty() && stored.getAmount() > 0) {
-                                        for (var elem : targets) {
-                                            if (elem.getLevel() == level && level.isLoaded(elem.getPos())) {
-                                                var targetBE = level.getBlockEntity(elem.getPos());
-                                                if (targetBE instanceof com.buuz135.replication.block.tile.NetworkBlockEntity<?> targetNetBE) {
-                                                    for (var component : targetNetBE.getMatterTankComponents()) {
-                                                        com.buuz135.replication.api.matter_fluid.MatterStack compStored = component.getMatter();
-                                                        if (compStored == null || compStored.isEmpty() || 
-                                                            (compStored.getMatterType() != null && stored.getMatterType() != null &&
-                                                             compStored.getMatterType().getName().equalsIgnoreCase(stored.getMatterType().getName()))) {
-                                                            double filled = component.fill(stored, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE);
-                                                            if (filled > 0) {
-                                                                tank.drain((int) Math.round(filled), net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
-                                                                component.fill(new com.buuz135.replication.api.matter_fluid.MatterStack(stored.getMatterType(), (int) Math.round(filled)), 
-                                                                    net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
-                                                                markForSave();
-                                                                ejected = true;
-                                                                break;
-                                                            }
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            if (ejected) break;
-                                        }
-                                        if (ejected) break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (!ejected) {
-                        com.buuz135.replication.api.matter_fluid.IMatterHandler targetHandler = 
-                            level.getBlockEntity(adjacent) != null ? level.getBlockEntity(adjacent).getCapability(com.buuz135.replication.ReplicationRegistry.Capabilities.MATTER_HANDLER, dir.getOpposite()).orElse(null) : null;
-                        
-                        if (targetHandler != null) {
-                            for (SimpleMatterTank tank : getMatterTanks()) {
-                                com.buuz135.replication.api.matter_fluid.MatterStack stored = tank.getMatter();
-                                if (stored != null && !stored.isEmpty() && stored.getAmount() > 0) {
-                                    double filled = targetHandler.fill(stored, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE);
-                                    if (filled > 0) {
-                                        tank.drain((int) Math.round(filled), net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
-                                        targetHandler.fill(
-                                            new com.buuz135.replication.api.matter_fluid.MatterStack(stored.getMatterType(), (int) Math.round(filled)), 
-                                            net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE
-                                        );
-                                        markForSave();
-                                    }
-                                }
-                            }
-                        } else {
-                            net.minecraftforge.fluids.capability.IFluidHandler targetFluidHandler = 
-                                level.getBlockEntity(adjacent) != null ? level.getBlockEntity(adjacent).getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.FLUID_HANDLER, dir.getOpposite()).orElse(null) : null;
-                            if (targetFluidHandler != null) {
-                                for (SimpleMatterTank tank : getMatterTanks()) {
-                                    com.buuz135.replication.api.matter_fluid.MatterStack stored = tank.getMatter();
-                                    if (stored != null && !stored.isEmpty() && stored.getAmount() > 0) {
-                                        net.minecraft.world.level.material.Fluid fluid = com.github.mochi7054.fluid.ReplicationFluidHandler.getFluidFromMatter(stored.getMatterType());
-                                        if (fluid != null) {
-                                            int mBAmount = (int) Math.round(stored.getAmount() * 1000.0);
-                                            net.minecraftforge.fluids.FluidStack fluidStack = new net.minecraftforge.fluids.FluidStack(fluid, mBAmount);
-                                            int filled = targetFluidHandler.fill(fluidStack, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE);
-                                            if (filled > 0) {
-                                                double drainedMatter = filled / 1000.0;
-                                                tank.drain((int) Math.round(drainedMatter), net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
-                                                targetFluidHandler.fill(
-                                                    new net.minecraftforge.fluids.FluidStack(fluid, filled), 
-                                                    net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE
-                                                );
-                                                markForSave();
-                                            }
-                                        }
-                                    }
-                                }
                             }
                         }
                     }
@@ -627,7 +567,7 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
             }
         }
 
-        java.util.Map<ItemKey, Integer> countMap = new java.util.LinkedHashMap<>();
+        Map<ItemKey, Integer> countMap = new java.util.LinkedHashMap<>();
         for (ItemStack stack : collected) {
             ItemKey key = new ItemKey(stack);
             countMap.put(key, countMap.getOrDefault(key, 0) + stack.getCount());
@@ -645,69 +585,84 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
                 this.template = template;
                 this.total = total;
                 this.maxPerStack = template.getMaxStackSize();
-                this.allocatedSlots = (total + maxPerStack - 1) / maxPerStack;
-            }
-
-            int getAverage() {
-                return (total + allocatedSlots - 1) / allocatedSlots;
+                this.allocatedSlots = 1;
             }
         }
 
         List<SortingGroup> groups = new ArrayList<>();
-        int totalAllocated = 0;
-        for (var entry : countMap.entrySet()) {
-            SortingGroup group = new SortingGroup(entry.getKey().stack, entry.getValue());
-            groups.add(group);
-            totalAllocated += group.allocatedSlots;
+        for (Map.Entry<ItemKey, Integer> entry : countMap.entrySet()) {
+            groups.add(new SortingGroup(entry.getKey().stack, entry.getValue()));
         }
 
-        if (totalAllocated > slotCount) {
-            totalAllocated = 0;
-            for (SortingGroup g : groups) {
-                g.allocatedSlots = 1;
-                totalAllocated += 1;
+        if (groups.size() > slotCount) {
+            int slotIdx = 0;
+            for (ItemStack original : collected) {
+                if (slotIdx < slotCount) {
+                    inputSlots.get(slotIdx++).setStack(original);
+                }
             }
+            return;
         }
 
-        while (totalAllocated < slotCount) {
-            SortingGroup bestCandidate = null;
-            int maxAvg = -1;
+        int remainingSlots = slotCount - groups.size();
+        while (remainingSlots > 0) {
+            SortingGroup bestGroup = null;
+            double maxExpectedPerSlot = -1;
+
             for (SortingGroup g : groups) {
-                if (g.allocatedSlots < slotCount) {
-                    int avg = g.getAverage();
-                    if (avg > maxAvg && avg > 1) {
-                        maxAvg = avg;
-                        bestCandidate = g;
+                int currentSlots = g.allocatedSlots;
+                int minSlotsNeeded = (g.total + g.maxPerStack - 1) / g.maxPerStack;
+                if (currentSlots < minSlotsNeeded) {
+                    double expected = (double) g.total / (currentSlots + 1);
+                    if (expected > maxExpectedPerSlot) {
+                        maxExpectedPerSlot = expected;
+                        bestGroup = g;
                     }
                 }
             }
-            if (bestCandidate != null) {
-                bestCandidate.allocatedSlots++;
-                totalAllocated++;
+
+            if (bestGroup == null) {
+                for (SortingGroup g : groups) {
+                    double expected = (double) g.total / (g.allocatedSlots + 1);
+                    if (expected > maxExpectedPerSlot) {
+                        maxExpectedPerSlot = expected;
+                        bestGroup = g;
+                    }
+                }
+            }
+
+            if (bestGroup != null) {
+                bestGroup.allocatedSlots++;
+                remainingSlots--;
             } else {
                 break;
             }
         }
 
-        int currentSlotIdx = 0;
+        int currentSlotIndex = 0;
         for (SortingGroup g : groups) {
-            int remaining = g.total;
-            int slotsToUse = Math.min(g.allocatedSlots, slotCount - currentSlotIdx);
-            for (int s = 0; s < slotsToUse; s++) {
-                int slotsLeftForGroup = slotsToUse - s;
-                int countForThisSlot = (remaining + slotsLeftForGroup - 1) / slotsLeftForGroup;
-                countForThisSlot = Math.min(countForThisSlot, g.maxPerStack);
+            int total = g.total;
+            int k = g.allocatedSlots;
 
-                if (countForThisSlot > 0 && currentSlotIdx < slotCount) {
-                    ItemStack distributedStack = g.template.copy();
-                    distributedStack.setCount(countForThisSlot);
-                    inputSlots.get(currentSlotIdx).setStack(distributedStack);
-                    remaining -= countForThisSlot;
-                    currentSlotIdx++;
+            int base = total / k;
+            int rem = total % k;
+
+            for (int i = 0; i < k; i++) {
+                if (currentSlotIndex >= slotCount) break;
+                int count = base + (i < rem ? 1 : 0);
+                if (count > 0) {
+                    ItemStack distributed = g.template.copy();
+                    distributed.setCount(Math.min(count, g.maxPerStack));
+                    inputSlots.get(currentSlotIndex).setStack(distributed);
                 }
+                currentSlotIndex++;
             }
         }
         markForSave();
+    }
+
+    public boolean isSorting() {
+        return sorting;
     }
 
     public void setSorting(boolean sorting) {
@@ -724,6 +679,7 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
                 container.track(SyncableInt.create(() -> this.operatingTicks[idx], value -> this.operatingTicks[idx] = value));
             }
         }
+        container.track(SyncableInt.create(() -> this.ticksRequired, value -> this.ticksRequired = value));
         container.track(SyncableBoolean.create(() -> this.sorting, value -> this.sorting = value));
         for (SimpleMatterTank tank : getMatterTanks()) {
             container.track(mekanism.common.inventory.container.sync.SyncableDouble.create(tank::getStored, tank::setStored));
