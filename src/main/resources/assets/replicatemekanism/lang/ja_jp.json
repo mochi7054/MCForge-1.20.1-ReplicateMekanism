@@ -15,6 +15,10 @@
   "gui.replicatemekanism.forensic.scan": "鑑識",
   "gui.replicatemekanism.forensic.scan.tooltip": "クリックで鑑識を実行（対象アイテムを1個消費してメモリチップに100%識別）",
   "chemical.replicatemekanism.replica": "レプリカ",
+  "infuse_type.replicatemekanism.replica": "レプリカ",
+  "gas.replicatemekanism.replica": "レプリカ",
+  "slurry.replicatemekanism.replica": "レプリカ",
+  "pigment.replicatemekanism.replica": "レプリカ",
 
   "upgrade.replicatemekanism.replica": "レプリカ",
   "upgrade.replicatemekanism.replica.desc": "機械の出力を倍化します。",
