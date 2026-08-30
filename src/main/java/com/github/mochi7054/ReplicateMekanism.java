@@ -174,8 +174,9 @@ public class ReplicateMekanism {
 
         IMAGINATOR_CONTAINER = CONTAINER_TYPES.register("imaginator", ImaginatorBlockEntity.class, ImaginatorMenu::new);
 
-        FORENSIC_CHAMBER_BLOCK = BLOCKS.register("forensic_chamber",
-                () -> new ForensicChamberBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.5F, 16.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+        FORENSIC_CHAMBER_BLOCK = BLOCKS.registerDefaultProperties("forensic_chamber",
+                () -> new ForensicChamberBlock(BlockBehaviour.Properties.of().mapColor(MapColor.METAL).strength(3.5F, 16.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()),
+                ForensicChamberBlockItem::new);
         FORENSIC_CHAMBER_TILE = TILE_ENTITY_TYPES.register(FORENSIC_CHAMBER_BLOCK, ForensicChamberBlockEntity::new);
         FORENSIC_CHAMBER_CONTAINER = CONTAINER_TYPES.register("forensic_chamber", ForensicChamberBlockEntity.class, ForensicChamberMenu::new);
 

@@ -26,4 +26,12 @@ public class ForensicChamberBlockItem extends ItemBlockTooltip<ForensicChamberBl
     protected void addDetails(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
         super.addDetails(stack, level, tooltip, flag);
     }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, level, tooltip, flag);
+        if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) {
+            tooltip.add(Component.translatable("description.replicatemekanism.forensic_chamber").withStyle(net.minecraft.ChatFormatting.GRAY));
+        }
+    }
 }

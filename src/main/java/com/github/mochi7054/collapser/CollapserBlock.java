@@ -82,22 +82,18 @@ public class CollapserBlock extends BlockTile<CollapserBlockEntity, BlockTypeTil
     }
 
     public static TileEntityTypeRegistryObject<CollapserBlockEntity> getTileSupplier(ReplicaTier tier) {
-        return switch (tier) {
-            case STANDARD -> ReplicateMekanism.COLLAPSER_TILE;
-            case BASIC -> ReplicateMekanism.COLLAPSER_BASIC_TILE;
-            case ADVANCED -> ReplicateMekanism.COLLAPSER_ADVANCED_TILE;
-            case ELITE -> ReplicateMekanism.COLLAPSER_ELITE_TILE;
-            case ULTIMATE -> ReplicateMekanism.COLLAPSER_ULTIMATE_TILE;
-        };
+        if (tier == ReplicaTier.BASIC) return ReplicateMekanism.COLLAPSER_BASIC_TILE;
+        if (tier == ReplicaTier.ADVANCED) return ReplicateMekanism.COLLAPSER_ADVANCED_TILE;
+        if (tier == ReplicaTier.ELITE) return ReplicateMekanism.COLLAPSER_ELITE_TILE;
+        if (tier == ReplicaTier.ULTIMATE) return ReplicateMekanism.COLLAPSER_ULTIMATE_TILE;
+        return ReplicateMekanism.COLLAPSER_TILE;
     }
 
     public static BlockRegistryObject<?, ?> getNextTierBlockSupplier(ReplicaTier tier) {
-        return switch (tier) {
-            case STANDARD -> ReplicateMekanism.COLLAPSER_BASIC_BLOCK;
-            case BASIC -> ReplicateMekanism.COLLAPSER_ADVANCED_BLOCK;
-            case ADVANCED -> ReplicateMekanism.COLLAPSER_ELITE_BLOCK;
-            case ELITE -> ReplicateMekanism.COLLAPSER_ULTIMATE_BLOCK;
-            case ULTIMATE -> null;
-        };
+        if (tier == ReplicaTier.STANDARD) return ReplicateMekanism.COLLAPSER_BASIC_BLOCK;
+        if (tier == ReplicaTier.BASIC) return ReplicateMekanism.COLLAPSER_ADVANCED_BLOCK;
+        if (tier == ReplicaTier.ADVANCED) return ReplicateMekanism.COLLAPSER_ELITE_BLOCK;
+        if (tier == ReplicaTier.ELITE) return ReplicateMekanism.COLLAPSER_ULTIMATE_BLOCK;
+        return null;
     }
 }
