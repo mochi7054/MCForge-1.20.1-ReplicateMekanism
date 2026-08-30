@@ -44,13 +44,13 @@ public abstract class BasicEnergyContainerMixin implements com.github.mochi7054.
         ordinal = 0,
         argsOnly = true
     )
-    private FloatingLong modifyInsertAmount(FloatingLong amount, Action action, AutomationType automationType) {
+    private FloatingLong modifyInsertAmount(FloatingLong modified, FloatingLong amount, Action action, AutomationType automationType) {
         if (action.execute() && automationType == AutomationType.INTERNAL && replicateMekanism$owner instanceof mekanism.generators.common.tile.TileEntityGenerator tile) {
             int mult = ReplicaRecipeTracker.getReplicaMultiplier(tile);
             if (mult > 1) {
                 return amount.multiply(mult);
             }
         }
-        return amount;
+        return modified;
     }
 }

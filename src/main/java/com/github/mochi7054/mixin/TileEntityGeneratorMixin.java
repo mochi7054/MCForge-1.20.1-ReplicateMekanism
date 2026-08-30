@@ -5,9 +5,6 @@ import mekanism.generators.common.tile.TileEntityGenerator;
 import mekanism.common.tile.component.TileComponentUpgrade;
 import mekanism.common.capabilities.energy.BasicEnergyContainer;
 import mekanism.api.math.FloatingLong;
-import mekanism.api.providers.IBlockProvider;
-import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -17,37 +14,34 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.github.mochi7054.recipe.ReplicaRecipeTracker;
 
 @Mixin(value = TileEntityGenerator.class, remap = false)
-public abstract class TileEntityGeneratorMixin extends TileEntityMekanism {
+public abstract class TileEntityGeneratorMixin {
 
     @Shadow
     private BasicEnergyContainer energyContainer;
 
-    public TileEntityGeneratorMixin(IBlockProvider blockProvider, BlockPos pos, BlockState state) {
-        super(blockProvider, pos, state);
-    }
-
     @Inject(method = "<init>", at = @At("RETURN"))
     private void onInit(CallbackInfo ci) {
         try {
+            TileEntityMekanism self = (TileEntityMekanism) (Object) this;
             java.lang.reflect.Field supportsUpgradesField = TileEntityMekanism.class.getDeclaredField("supportsUpgrades");
             supportsUpgradesField.setAccessible(true);
-            supportsUpgradesField.setBoolean(this, true);
+            supportsUpgradesField.setBoolean(self, true);
 
             java.lang.reflect.Field canBeUpgradedField = TileEntityMekanism.class.getDeclaredField("canBeUpgraded");
             canBeUpgradedField.setAccessible(true);
-            canBeUpgradedField.setBoolean(this, true);
+            canBeUpgradedField.setBoolean(self, true);
 
             java.lang.reflect.Field upgradeComponentField = TileEntityMekanism.class.getDeclaredField("upgradeComponent");
             upgradeComponentField.setAccessible(true);
             
-            TileComponentUpgrade upgradeComp = (TileComponentUpgrade) upgradeComponentField.get(this);
+            TileComponentUpgrade upgradeComp = (TileComponentUpgrade) upgradeComponentField.get(self);
             if (upgradeComp == null) {
-                upgradeComp = new TileComponentUpgrade(this);
-                upgradeComponentField.set(this, upgradeComp);
-                this.addComponent(upgradeComp);
+                upgradeComp = new TileComponentUpgrade(self);
+                upgradeComponentField.set(self, upgradeComp);
+                self.addComponent(upgradeComp);
             }
             if (this.energyContainer instanceof com.github.mochi7054.IOwnerTrackedContainer tracker) {
-                tracker.setReplicateMekanism$owner(this);
+                tracker.setReplicateMekanism$owner(self);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -56,7 +50,8 @@ public abstract class TileEntityGeneratorMixin extends TileEntityMekanism {
 
     @Inject(method = "getMaxOutput", at = @At("RETURN"), cancellable = true)
     private void onGetMaxOutput(CallbackInfoReturnable<FloatingLong> cir) {
-        int mult = ReplicaRecipeTracker.getReplicaMultiplier(this);
+        TileEntityMekanism self = (TileEntityMekanism) (Object) this;
+        int mult = ReplicaRecipeTracker.getReplicaMultiplier(self);
         if (mult > 1) {
             FloatingLong orig = cir.getReturnValue();
             cir.setReturnValue(orig.multiply(mult));

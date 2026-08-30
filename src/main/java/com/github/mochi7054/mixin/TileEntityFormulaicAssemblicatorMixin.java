@@ -17,7 +17,7 @@ public class TileEntityFormulaicAssemblicatorMixin {
         argsOnly = true,
         ordinal = 0
     )
-    private ItemStack modifyCraftedOutput(ItemStack stack, Action action) {
+    private ItemStack modifyCraftedOutput(ItemStack modified, ItemStack stack, Action action) {
         TileEntityFormulaicAssemblicator assemblicator = (TileEntityFormulaicAssemblicator) (Object) this;
         int mult = ReplicaRecipeTracker.getReplicaMultiplier(assemblicator);
         if (action.execute() && mult > 1 && stack != null && !stack.isEmpty()) {
@@ -26,6 +26,6 @@ public class TileEntityFormulaicAssemblicatorMixin {
             multiplied.setCount((int) Math.min(Integer.MAX_VALUE, newCount));
             return multiplied;
         }
-        return stack;
+        return modified;
     }
 }

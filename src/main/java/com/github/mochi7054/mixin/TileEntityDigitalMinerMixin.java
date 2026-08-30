@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import mekanism.common.tile.machine.TileEntityDigitalMiner;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
@@ -17,7 +16,7 @@ import com.github.mochi7054.ReplicateMekanism;
 public abstract class TileEntityDigitalMinerMixin {
 
     @Inject(method = "getDrops", at = @At("RETURN"), cancellable = true)
-    private void onGetDrops(ServerLevel level, BlockState state, BlockPos pos, CallbackInfoReturnable<List<ItemStack>> cir) {
+    private void onGetDrops(BlockState state, BlockPos pos, CallbackInfoReturnable<List<ItemStack>> cir) {
         List<ItemStack> drops = cir.getReturnValue();
         if (drops != null && !drops.isEmpty()) {
             TileEntityDigitalMiner miner = (TileEntityDigitalMiner) (Object) this;

@@ -2,6 +2,7 @@ package com.github.mochi7054.mixin;
 
 import java.util.HashSet;
 import java.util.Set;
+import mekanism.api.IContentsListener;
 import mekanism.api.Upgrade;
 import mekanism.common.inventory.slot.UpgradeInventorySlot;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,12 +19,12 @@ public class UpgradeInventorySlotMixin {
         argsOnly = true,
         ordinal = 0
     )
-    private static Set<Upgrade> modifySupportedTypes(Set<Upgrade> supportedTypes) {
+    private static Set<Upgrade> modifySupportedTypes(Set<Upgrade> modified, IContentsListener listener, Set<Upgrade> supportedTypes) {
         if (supportedTypes != null) {
             Set<Upgrade> mutableSet = new HashSet<>(supportedTypes);
             mutableSet.add(ReplicateMekanism.REPLICA_UPGRADE_TYPE);
             return mutableSet;
         }
-        return supportedTypes;
+        return modified;
     }
 }

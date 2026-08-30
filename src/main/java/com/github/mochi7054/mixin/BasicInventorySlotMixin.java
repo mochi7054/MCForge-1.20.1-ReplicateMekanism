@@ -40,7 +40,7 @@ public class BasicInventorySlotMixin {
         argsOnly = true,
         ordinal = 0
     )
-    private ItemStack modifyInsertItemStack(ItemStack stack, Action action, AutomationType automationType) {
+    private ItemStack modifyInsertItemStack(ItemStack modified, ItemStack stack, Action action, AutomationType automationType) {
         int mult = ReplicaRecipeTracker.currentMultiplier.get();
         if (action.execute() && mult > 1 && stack != null && !stack.isEmpty()) {
             ItemStack multiplied = stack.copy();
@@ -48,6 +48,6 @@ public class BasicInventorySlotMixin {
             multiplied.setCount((int) Math.min(Integer.MAX_VALUE, newCount));
             return multiplied;
         }
-        return stack;
+        return modified;
     }
 }
