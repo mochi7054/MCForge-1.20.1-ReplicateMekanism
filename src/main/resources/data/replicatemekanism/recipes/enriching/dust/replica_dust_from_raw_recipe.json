@@ -1,12 +1,13 @@
 {
   "type": "mekanism:enriching",
   "input": {
+    "amount": 3,
     "ingredient": {
       "item": "replication:raw_replica"
     }
   },
   "output": {
-    "count": 2,
+    "count": 4,
     "item": "replicatemekanism:replica_dust"
   }
 }
