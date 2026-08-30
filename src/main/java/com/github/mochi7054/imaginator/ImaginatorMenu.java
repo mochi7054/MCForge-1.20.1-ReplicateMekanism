@@ -228,10 +228,24 @@ public class ImaginatorMenu extends MekanismTileContainer<ImaginatorBlockEntity>
                             }
                         }
                     }
+
+                    if (this.getUpgradeSlot() != null && stack.getItem() instanceof mekanism.common.item.ItemUpgrade) {
+                        if (!this.moveItemStackTo(itemstack1, this.getUpgradeSlot().index, this.getUpgradeSlot().index + 1, false)) {
+                            return net.minecraft.world.item.ItemStack.EMPTY;
+                        }
+                        if (itemstack1.isEmpty()) {
+                            slot.set(net.minecraft.world.item.ItemStack.EMPTY);
+                        } else {
+                            slot.setChanged();
+                        }
+                        slot.onTake(player, itemstack1);
+                        this.broadcastChanges();
+                        return itemstack;
+                    }
                 }
             }
         }
 
-        return this.m_7648_(player, slotId);
+        return net.minecraft.world.item.ItemStack.EMPTY;
     }
 }

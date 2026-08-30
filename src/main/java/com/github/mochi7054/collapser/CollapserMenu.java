@@ -50,9 +50,4 @@ public class CollapserMenu extends MekanismTileContainer<CollapserBlockEntity> {
             this.addSlot(new mekanism.common.inventory.container.slot.HotBarSlot(playerInventory, col, x, hotbarY));
         }
     }
-
-    @Override
-    public net.minecraft.world.item.ItemStack quickMoveStack(net.minecraft.world.entity.player.Player player, int slotId) {
-        return this.m_7648_(player, slotId);
-    }
 }
