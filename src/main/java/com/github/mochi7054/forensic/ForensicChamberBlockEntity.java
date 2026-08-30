@@ -65,6 +65,11 @@ public class ForensicChamberBlockEntity extends TileEntityConfigurableMachine im
     public mekanism.common.tile.component.TileComponentUpgrade getComponent() { return upgradeComponent; }
 
     @Override
+    public java.util.Set<mekanism.api.Upgrade> getSupportedUpgrade() {
+        return java.util.EnumSet.of(mekanism.api.Upgrade.ENERGY);
+    }
+
+    @Override
     public void recalculateUpgrades(mekanism.api.Upgrade upgrade) { super.recalculateUpgrades(upgrade); }
 
     public Component getName() {

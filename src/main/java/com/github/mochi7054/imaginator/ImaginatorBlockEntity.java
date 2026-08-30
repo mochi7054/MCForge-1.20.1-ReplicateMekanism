@@ -134,6 +134,11 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
     public mekanism.common.tile.component.TileComponentUpgrade getComponent() { return upgradeComponent; }
 
     @Override
+    public java.util.Set<mekanism.api.Upgrade> getSupportedUpgrade() {
+        return java.util.EnumSet.of(Upgrade.SPEED, Upgrade.ENERGY);
+    }
+
+    @Override
     public void recalculateUpgrades(Upgrade upgrade) { super.recalculateUpgrades(upgrade); }
 
     public ReplicaTier getTier() {
