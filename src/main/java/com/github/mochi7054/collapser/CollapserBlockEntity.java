@@ -119,10 +119,12 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
         configComponent = new TileComponentConfig(this, TransmissionType.ITEM, TransmissionType.ENERGY, TransmissionType.FLUID);
         ejectorComponent = new TileComponentEjector(this);
 
-        for (int i = 0; i < inputSlots.size(); i++) {
-            final int slotIndex = i;
-            configComponent.setupItemIOConfig(inputSlots.get(slotIndex), null, energySlot);
-        }
+        configComponent.setupItemIOConfig(
+            new ArrayList<>(inputSlots),
+            Collections.emptyList(),
+            energySlot,
+            false
+        );
         configComponent.setupInputConfig(TransmissionType.ENERGY, energyContainer);
 
         var energyConfig = configComponent.getConfig(TransmissionType.ENERGY);
