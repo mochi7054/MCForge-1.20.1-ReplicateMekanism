@@ -60,4 +60,12 @@ public abstract class UpgradeMixin {
             cir.setReturnValue(net.minecraft.network.chat.Component.translatable("upgrade.replicatemekanism.replica.desc"));
         }
     }
+
+    @Inject(method = "getMax", at = @At("HEAD"), cancellable = true)
+    private void onGetMax(org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Integer> cir) {
+        Upgrade self = (Upgrade) (Object) this;
+        if (self == com.github.mochi7054.ReplicateMekanism.REPLICA_UPGRADE_TYPE) {
+            cir.setReturnValue(com.github.mochi7054.config.Config.getReplicaUpgradeMaxStack());
+        }
+    }
 }

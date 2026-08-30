@@ -8,7 +8,7 @@ public class Config {
     public static final ForgeConfigSpec.IntValue REPLICA_UPGRADE_MAX_STACK = BUILDER
             .comment("The maximum stack size for the replica upgrade (1-8)")
             .translation("replicatemekanism.configuration.replicaUpgradeMaxStack")
-            .defineInRange("replicaUpgradeMaxStack", 1, 1, 8);
+            .defineInRange("replicaUpgradeMaxStack", 8, 1, 8);
 
     public static final ForgeConfigSpec SPEC = BUILDER.build();
 
@@ -16,7 +16,7 @@ public class Config {
         try {
             return REPLICA_UPGRADE_MAX_STACK.get();
         } catch (Exception e) {
-            return 1;
+            return 8;
         }
     }
 }

@@ -232,6 +232,6 @@ public class ImaginatorMenu extends MekanismTileContainer<ImaginatorBlockEntity>
             }
         }
 
-        return net.minecraft.world.item.ItemStack.EMPTY;
+        return this.m_7648_(player, slotId);
     }
 }

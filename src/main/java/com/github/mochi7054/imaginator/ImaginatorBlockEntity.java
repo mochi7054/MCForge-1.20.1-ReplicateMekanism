@@ -1014,7 +1014,7 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
         if (this.operatingTicks == null || slotIndex < 0 || slotIndex >= this.operatingTicks.length) {
             return 0;
         }
-        int ticks = MekanismUtils.getTicks(this, BASE_TICKS_REQUIRED);
+        int ticks = this.ticksRequired > 0 ? this.ticksRequired : MekanismUtils.getTicks(this, BASE_TICKS_REQUIRED);
         return (double) this.operatingTicks[slotIndex] / (double) Math.max(1, ticks);
     }
 

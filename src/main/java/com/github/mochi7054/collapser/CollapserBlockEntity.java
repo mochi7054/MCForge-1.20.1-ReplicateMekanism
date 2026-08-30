@@ -326,10 +326,18 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
 
     public double getProgress(int slotIndex) {
         if (operatingTicks != null && slotIndex >= 0 && slotIndex < operatingTicks.length) {
-            int ticks = MekanismUtils.getTicks(this, BASE_TICKS_REQUIRED);
+            int ticks = this.ticksRequired > 0 ? this.ticksRequired : MekanismUtils.getTicks(this, BASE_TICKS_REQUIRED);
             return (double) operatingTicks[slotIndex] / (double) Math.max(1, ticks);
         }
         return 0.0;
+    }
+
+    public double getScaledProgress() {
+        return getProgress(0);
+    }
+
+    public double getScaledProgress(int slotIndex) {
+        return getProgress(slotIndex);
     }
 
     public int getSlotX(int index) {
