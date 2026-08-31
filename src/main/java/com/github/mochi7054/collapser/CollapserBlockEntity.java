@@ -58,6 +58,7 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
     public int[] operatingTicks;
     public int ticksRequired = BASE_TICKS_REQUIRED;
     public boolean sorting = false;
+    private boolean sortingNeeded = false;
 
     public MachineEnergyContainer<CollapserBlockEntity> energyContainer;
 
@@ -261,11 +262,16 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
             inputSlots.clear();
         }
 
+        IContentsListener slotListener = () -> {
+            listener.onContentsChanged();
+            this.sortingNeeded = true;
+        };
+
         for (int i = 0; i < slotCount; i++) {
             InputInventorySlot inputSlot = InputInventorySlot.at(stack -> {
                 MatterCompound compound = getMatterCompoundSafe(stack);
                 return compound != null && !compound.getValues().isEmpty();
-            }, listener, inputCoords[i][0], inputCoords[i][1]);
+            }, slotListener, inputCoords[i][0], inputCoords[i][1]);
             inputSlots.add(inputSlot);
             builder.addSlot(inputSlot);
         }
@@ -479,9 +485,10 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
                 markForSave();
             }
 
-            // 自動分配: BASIC以上のティアで sorting が有効なら毎 tick 実行
-            if (sorting && inputSlots.size() > 1 && level != null && level.getGameTime() % 20 == 0) {
+            // 自動分配: BASIC以上のティアで sorting が有効かつインベントリ変更時に実行
+            if (sorting && sortingNeeded && inputSlots.size() > 1) {
                 sortInputSlots();
+                sortingNeeded = false;
             }
 
             // 自動排出 (Auto-Eject)
@@ -540,17 +547,9 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
     }
 
     private void sortInputSlots() {
-        if (inputSlots.size() <= 1) return;
+        if (inputSlots == null || inputSlots.size() <= 1) return;
 
-        List<ItemStack> collected = new ArrayList<>();
-        for (InputInventorySlot slot : inputSlots) {
-            ItemStack stack = slot.getStack();
-            if (!stack.isEmpty()) {
-                collected.add(stack.copy());
-                slot.setStack(ItemStack.EMPTY);
-            }
-        }
-        if (collected.isEmpty()) return;
+        int slotCount = inputSlots.size();
 
         class ItemKey {
             final ItemStack stack;
@@ -575,13 +574,16 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
             }
         }
 
+        // スロットをクリアせずに全アイテムを集計
         Map<ItemKey, Integer> countMap = new java.util.LinkedHashMap<>();
-        for (ItemStack stack : collected) {
-            ItemKey key = new ItemKey(stack);
-            countMap.put(key, countMap.getOrDefault(key, 0) + stack.getCount());
+        for (InputInventorySlot slot : inputSlots) {
+            ItemStack stack = slot.getStack();
+            if (!stack.isEmpty()) {
+                ItemKey key = new ItemKey(stack);
+                countMap.put(key, countMap.getOrDefault(key, 0) + stack.getCount());
+            }
         }
-
-        int slotCount = inputSlots.size();
+        if (countMap.isEmpty()) return;
 
         class SortingGroup {
             final ItemStack template;
@@ -603,12 +605,6 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
         }
 
         if (groups.size() > slotCount) {
-            int slotIdx = 0;
-            for (ItemStack original : collected) {
-                if (slotIdx < slotCount) {
-                    inputSlots.get(slotIdx++).setStack(original);
-                }
-            }
             return;
         }
 
@@ -647,11 +643,16 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
             }
         }
 
+        // 理想のスロット配置を計算
+        ItemStack[] targetStacks = new ItemStack[slotCount];
+        for (int i = 0; i < slotCount; i++) {
+            targetStacks[i] = ItemStack.EMPTY;
+        }
+
         int currentSlotIndex = 0;
         for (SortingGroup g : groups) {
             int total = g.total;
             int k = g.allocatedSlots;
-
             int base = total / k;
             int rem = total % k;
 
@@ -661,9 +662,18 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
                 if (count > 0) {
                     ItemStack distributed = g.template.copy();
                     distributed.setCount(Math.min(count, g.maxPerStack));
-                    inputSlots.get(currentSlotIndex).setStack(distributed);
+                    targetStacks[currentSlotIndex] = distributed;
                 }
                 currentSlotIndex++;
+            }
+        }
+
+        // 差分があるスロットのみ setStack
+        for (int i = 0; i < slotCount; i++) {
+            ItemStack current = inputSlots.get(i).getStack();
+            ItemStack target = targetStacks[i];
+            if (!ItemStack.matches(current, target)) {
+                inputSlots.get(i).setStack(target);
             }
         }
         markForSave();
