@@ -50,41 +50,41 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
         ReplicaTier tier = tile.getTier();
 
         if (tier == ReplicaTier.STANDARD) {
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.earthTank, 70, 25, 5, 42, false));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.netherTank, 78, 25, 5, 42, false));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.organicTank, 86, 25, 5, 42, false));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.enderTank, 94, 25, 5, 42, false));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.metallicTank, 102, 25, 5, 42, false));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.preciousTank, 110, 25, 5, 42, false));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.livingTank, 118, 25, 5, 42, false));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.quantumTank, 126, 25, 5, 42, false));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.earthTank, 70, 25, 5, 42, false));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.netherTank, 78, 25, 5, 42, false));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.organicTank, 86, 25, 5, 42, false));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.enderTank, 94, 25, 5, 42, false));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.metallicTank, 102, 25, 5, 42, false));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.preciousTank, 110, 25, 5, 42, false));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.livingTank, 118, 25, 5, 42, false));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.quantumTank, 126, 25, 5, 42, false));
 
-            this.addRenderableWidget(new ReplicationGuiVerticalPowerBar(this, tile.energyContainer, 162, 25, 42));
-            this.addRenderableWidget(new CollapserGuiProgress(() -> tile.getScaledProgress(), this, 41, 41));
+            this.addElement(new ReplicationGuiVerticalPowerBar(this, tile.energyContainer, 162, 25, 42));
+            this.addElement(new CollapserGuiProgress(() -> tile.getScaledProgress(), this, 41, 41));
         } else {
             int fluidStartX = (this.imageWidth - 142) / 2;
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.earthTank, fluidStartX, 84, 16, 5, true));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.netherTank, fluidStartX + 18, 84, 16, 5, true));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.organicTank, fluidStartX + 36, 84, 16, 5, true));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.enderTank, fluidStartX + 54, 84, 16, 5, true));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.metallicTank, fluidStartX + 72, 84, 16, 5, true));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.preciousTank, fluidStartX + 90, 84, 16, 5, true));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.livingTank, fluidStartX + 108, 84, 16, 5, true));
-            this.addRenderableWidget(new ReplicationGuiFluidBar(this, tile.quantumTank, fluidStartX + 126, 84, 16, 5, true));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.earthTank, fluidStartX, 84, 16, 5, true));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.netherTank, fluidStartX + 18, 84, 16, 5, true));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.organicTank, fluidStartX + 36, 84, 16, 5, true));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.enderTank, fluidStartX + 54, 84, 16, 5, true));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.metallicTank, fluidStartX + 72, 84, 16, 5, true));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.preciousTank, fluidStartX + 90, 84, 16, 5, true));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.livingTank, fluidStartX + 108, 84, 16, 5, true));
+            this.addElement(new ReplicationGuiFluidBar(this, tile.quantumTank, fluidStartX + 126, 84, 16, 5, true));
 
-            this.addRenderableWidget(new ReplicationGuiVerticalPowerBar(this, tile.energyContainer, this.imageWidth - 12, 25, 42));
+            this.addElement(new ReplicationGuiVerticalPowerBar(this, tile.energyContainer, this.imageWidth - 12, 25, 42));
 
             for (int i = 0; i < tile.getTier().getSlots(); i++) {
                 final int idx = i;
                 int arrowX = tile.getSlotX(i) + 5;
-                this.addRenderableWidget(new ReplicationGuiProgressDown(() -> tile.getScaledProgress(idx), this, arrowX, 39));
+                this.addElement(new ReplicationGuiProgressDown(() -> tile.getScaledProgress(idx), this, arrowX, 39));
             }
         }
 
-        this.addRenderableWidget(new GuiEnergyTab(this, tile.energyContainer, () -> true));
+        this.addElement(new GuiEnergyTab(this, tile.energyContainer, () -> true));
 
         if (tier != ReplicaTier.STANDARD) {
-            this.addRenderableWidget(new GuiCollapserSortingTab(this, tile));
+            this.addElement(new GuiCollapserSortingTab(this, tile));
         }
 
         for (net.minecraft.client.gui.components.events.GuiEventListener listener : this.children()) {
@@ -343,9 +343,7 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
         }
 
         @Override
-        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
-            this.renderShifted(guiGraphics, mouseX, mouseY, partialTicks);
-        }
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
 
         @Override
         public void updateWidgetNarration(net.minecraft.client.gui.narration.NarrationElementOutput output) {}
