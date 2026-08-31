@@ -27,7 +27,10 @@ public class ToggleAutoSortPacket {
         ctx.get().enqueueWork(() -> {
             ServerPlayer player = ctx.get().getSender();
             if (player != null && player.level().isLoaded(msg.pos)) {
-                if (player.level().getBlockEntity(msg.pos) instanceof ImaginatorBlockEntity tile) {
+                var be = player.level().getBlockEntity(msg.pos);
+                if (be instanceof com.github.mochi7054.collapser.CollapserBlockEntity collapser) {
+                    collapser.setSorting(!collapser.isSorting());
+                } else if (be instanceof ImaginatorBlockEntity tile) {
                     tile.toggleAutoSort();
                 }
             }

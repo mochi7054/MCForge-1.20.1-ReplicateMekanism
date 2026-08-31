@@ -63,6 +63,17 @@ public class SimpleMatterTank implements IMatterTank {
         return new MatterStack(matterType, (int) Math.round(stored));
     }
 
+    public net.minecraftforge.fluids.FluidStack getFluidStack() {
+        if (isEmpty() || matterType == null) {
+            return net.minecraftforge.fluids.FluidStack.EMPTY;
+        }
+        var fluid = ReplicationFluidHandler.getFluidFromMatter(matterType);
+        if (fluid != null) {
+            return new net.minecraftforge.fluids.FluidStack(fluid, (int) Math.round(stored));
+        }
+        return net.minecraftforge.fluids.FluidStack.EMPTY;
+    }
+
     @Override
     public boolean isMatterValid(MatterStack stack) {
         return stack != null && stack.getMatterType() == this.matterType;

@@ -1334,4 +1334,96 @@ public class ImaginatorBlockEntity extends TileEntityConfigurableMachine impleme
         }
         return false;
     }
+
+    private final net.minecraftforge.common.util.LazyOptional<com.buuz135.replication.api.matter_fluid.IMatterHandler> matterHandlerCapability =
+            net.minecraftforge.common.util.LazyOptional.of(() -> new com.buuz135.replication.api.matter_fluid.IMatterHandler() {
+                @Override
+                public int getTanks() {
+                    return getMatterTanks().size();
+                }
+
+                @Override
+                public com.buuz135.replication.api.matter_fluid.MatterStack getMatterInTank(int tank) {
+                    var tanks = getMatterTanks();
+                    if (tank >= 0 && tank < tanks.size()) {
+                        return tanks.get(tank).getMatter();
+                    }
+                    return com.buuz135.replication.api.matter_fluid.MatterStack.EMPTY;
+                }
+
+                @Override
+                public int getTankCapacity(int tank) {
+                    var tanks = getMatterTanks();
+                    if (tank >= 0 && tank < tanks.size()) {
+                        return tanks.get(tank).getCapacity();
+                    }
+                    return 0;
+                }
+
+                @Override
+                public boolean isMatterValid(int tank, com.buuz135.replication.api.matter_fluid.MatterStack stack) {
+                    var tanks = getMatterTanks();
+                    if (tank >= 0 && tank < tanks.size()) {
+                        return tanks.get(tank).isMatterValid(stack);
+                    }
+                    return false;
+                }
+
+                @Override
+                public int fill(com.buuz135.replication.api.matter_fluid.MatterStack stack, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction action) {
+                    if (stack == null || stack.isEmpty()) return 0;
+                    for (com.github.mochi7054.fluid.SimpleMatterTank tank : getMatterTanks()) {
+                        if (tank.isMatterValid(stack)) {
+                            int filled = tank.fill(stack, action);
+                            if (filled > 0) {
+                                markForSave();
+                                return filled;
+                            }
+                        }
+                    }
+                    return 0;
+                }
+
+                @Override
+                public com.buuz135.replication.api.matter_fluid.MatterStack drain(com.buuz135.replication.api.matter_fluid.MatterStack stack, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction action) {
+                    if (stack == null || stack.isEmpty()) return com.buuz135.replication.api.matter_fluid.MatterStack.EMPTY;
+                    for (com.github.mochi7054.fluid.SimpleMatterTank tank : getMatterTanks()) {
+                        if (tank.isMatterValid(stack)) {
+                            var drained = tank.drain(stack.getAmount(), action);
+                            if (!drained.isEmpty()) {
+                                markForSave();
+                                return drained;
+                            }
+                        }
+                    }
+                    return com.buuz135.replication.api.matter_fluid.MatterStack.EMPTY;
+                }
+
+                @Override
+                public com.buuz135.replication.api.matter_fluid.MatterStack drain(int maxDrain, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction action) {
+                    if (maxDrain <= 0) return com.buuz135.replication.api.matter_fluid.MatterStack.EMPTY;
+                    for (com.github.mochi7054.fluid.SimpleMatterTank tank : getMatterTanks()) {
+                        if (!tank.isEmpty()) {
+                            var drained = tank.drain(maxDrain, action);
+                            if (!drained.isEmpty()) {
+                                markForSave();
+                                return drained;
+                            }
+                        }
+                    }
+                    return com.buuz135.replication.api.matter_fluid.MatterStack.EMPTY;
+                }
+            });
+
+    @NotNull
+    @Override
+    public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(@NotNull net.minecraftforge.common.capabilities.Capability<T> capability, @Nullable Direction side) {
+        if (capability == com.buuz135.replication.ReplicationRegistry.Capabilities.MATTER_HANDLER) {
+            return matterHandlerCapability.cast();
+        }
+        if (capability == net.minecraftforge.common.capabilities.ForgeCapabilities.FLUID_HANDLER) {
+            return net.minecraftforge.common.util.LazyOptional.of(() -> new com.github.mochi7054.fluid.ReplicationFluidHandler(this, getMatterTanks(), side)).cast();
+        }
+        return super.getCapability(capability, side);
+    }
 }

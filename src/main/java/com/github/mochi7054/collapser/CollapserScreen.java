@@ -343,7 +343,9 @@ public class CollapserScreen extends GuiConfigurableTile<CollapserBlockEntity, C
         }
 
         @Override
-        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {}
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTicks) {
+            this.renderShifted(guiGraphics, mouseX, mouseY, partialTicks);
+        }
 
         @Override
         public void updateWidgetNarration(net.minecraft.client.gui.narration.NarrationElementOutput output) {}

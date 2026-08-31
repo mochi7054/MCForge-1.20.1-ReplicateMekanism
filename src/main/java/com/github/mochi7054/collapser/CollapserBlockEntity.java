@@ -540,6 +540,66 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
                                 if (ejected) break;
                             }
                         }
+
+                        // パイプ等の場合（自身にタンクがない場合）、パイプ網（MatterNetwork）の全タンクへ搬出
+                        if (!ejected) {
+                            com.buuz135.replication.network.MatterNetwork matterNetwork = networkBE.getNetwork();
+                            if (matterNetwork != null) {
+                                java.util.List<com.hrznstudio.titanium.block_network.element.NetworkElement> targets = new java.util.ArrayList<>();
+                                targets.addAll(matterNetwork.getMatterStacksHolders());
+                                targets.addAll(matterNetwork.getMatterStacksConsumers());
+                                for (SimpleMatterTank myTank : getMatterTanks()) {
+                                    com.buuz135.replication.api.matter_fluid.MatterStack stored = myTank.getMatter();
+                                    if (stored != null && !stored.isEmpty() && stored.getAmount() > 0) {
+                                        for (var elem : targets) {
+                                            if (elem.getLevel() == level && level.isLoaded(elem.getPos())) {
+                                                var targetBE = level.getBlockEntity(elem.getPos());
+                                                if (targetBE instanceof com.buuz135.replication.block.tile.NetworkBlockEntity<?> targetNetBE) {
+                                                    for (var component : targetNetBE.getMatterTankComponents()) {
+                                                        var compStored = component.getMatter();
+                                                        if (compStored == null || compStored.isEmpty() || 
+                                                            (compStored.getMatterType() != null && stored.getMatterType() != null &&
+                                                             compStored.getMatterType().getName().equalsIgnoreCase(stored.getMatterType().getName()))) {
+                                                            double filled = component.fill(stored, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE);
+                                                            if (filled > 0) {
+                                                                myTank.drainDouble(filled, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+                                                                component.fill(new com.buuz135.replication.api.matter_fluid.MatterStack(stored.getMatterType(), (int) Math.round(filled)), 
+                                                                    net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+                                                                markForSave();
+                                                                ejected = true;
+                                                                break;
+                                                            }
+                                                        }
+                                                    }
+                                                    if (ejected) break;
+                                                }
+                                            }
+                                        }
+                                        if (ejected) break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 隣接が Forge FLUID_HANDLER の場合（Mekanism 液体パイプ、EnderIO 等）
+                    if (!ejected && adjacentBE != null) {
+                        adjacentBE.getCapability(net.minecraftforge.common.capabilities.ForgeCapabilities.FLUID_HANDLER, dir.getOpposite()).ifPresent(fluidHandler -> {
+                            for (SimpleMatterTank tank : getMatterTanks()) {
+                                if (!tank.isEmpty()) {
+                                    var fluidStack = tank.getFluidStack();
+                                    if (fluidStack != null && !fluidStack.isEmpty()) {
+                                        int filled = fluidHandler.fill(fluidStack, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.SIMULATE);
+                                        if (filled > 0) {
+                                            tank.drainDouble(filled, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+                                            fluidHandler.fill(new net.minecraftforge.fluids.FluidStack(fluidStack.getFluid(), filled), net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+                                            markForSave();
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        });
                     }
                 }
             }
@@ -787,6 +847,98 @@ public class CollapserBlockEntity extends TileEntityConfigurableMachine implemen
                 System.arraycopy(data.operatingTicks, 0, this.operatingTicks, 0, Math.min(this.operatingTicks.length, data.operatingTicks.length));
             }
         }
+    }
+
+    private final net.minecraftforge.common.util.LazyOptional<com.buuz135.replication.api.matter_fluid.IMatterHandler> matterHandlerCapability =
+            net.minecraftforge.common.util.LazyOptional.of(() -> new com.buuz135.replication.api.matter_fluid.IMatterHandler() {
+                @Override
+                public int getTanks() {
+                    return getMatterTanks().size();
+                }
+
+                @Override
+                public com.buuz135.replication.api.matter_fluid.MatterStack getMatterInTank(int tank) {
+                    var tanks = getMatterTanks();
+                    if (tank >= 0 && tank < tanks.size()) {
+                        return tanks.get(tank).getMatter();
+                    }
+                    return com.buuz135.replication.api.matter_fluid.MatterStack.EMPTY;
+                }
+
+                @Override
+                public int getTankCapacity(int tank) {
+                    var tanks = getMatterTanks();
+                    if (tank >= 0 && tank < tanks.size()) {
+                        return tanks.get(tank).getCapacity();
+                    }
+                    return 0;
+                }
+
+                @Override
+                public boolean isMatterValid(int tank, com.buuz135.replication.api.matter_fluid.MatterStack stack) {
+                    var tanks = getMatterTanks();
+                    if (tank >= 0 && tank < tanks.size()) {
+                        return tanks.get(tank).isMatterValid(stack);
+                    }
+                    return false;
+                }
+
+                @Override
+                public int fill(com.buuz135.replication.api.matter_fluid.MatterStack stack, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction action) {
+                    if (stack == null || stack.isEmpty()) return 0;
+                    for (SimpleMatterTank tank : getMatterTanks()) {
+                        if (tank.isMatterValid(stack)) {
+                            int filled = tank.fill(stack, action);
+                            if (filled > 0) {
+                                markForSave();
+                                return filled;
+                            }
+                        }
+                    }
+                    return 0;
+                }
+
+                @Override
+                public com.buuz135.replication.api.matter_fluid.MatterStack drain(com.buuz135.replication.api.matter_fluid.MatterStack stack, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction action) {
+                    if (stack == null || stack.isEmpty()) return com.buuz135.replication.api.matter_fluid.MatterStack.EMPTY;
+                    for (SimpleMatterTank tank : getMatterTanks()) {
+                        if (tank.isMatterValid(stack)) {
+                            var drained = tank.drain(stack.getAmount(), action);
+                            if (!drained.isEmpty()) {
+                                markForSave();
+                                return drained;
+                            }
+                        }
+                    }
+                    return com.buuz135.replication.api.matter_fluid.MatterStack.EMPTY;
+                }
+
+                @Override
+                public com.buuz135.replication.api.matter_fluid.MatterStack drain(int maxDrain, net.minecraftforge.fluids.capability.IFluidHandler.FluidAction action) {
+                    if (maxDrain <= 0) return com.buuz135.replication.api.matter_fluid.MatterStack.EMPTY;
+                    for (SimpleMatterTank tank : getMatterTanks()) {
+                        if (!tank.isEmpty()) {
+                            var drained = tank.drain(maxDrain, action);
+                            if (!drained.isEmpty()) {
+                                markForSave();
+                                return drained;
+                            }
+                        }
+                    }
+                    return com.buuz135.replication.api.matter_fluid.MatterStack.EMPTY;
+                }
+            });
+
+    @NotNull
+    @Override
+    public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(@NotNull net.minecraftforge.common.capabilities.Capability<T> capability, @Nullable Direction side) {
+        if (capability == com.buuz135.replication.ReplicationRegistry.Capabilities.MATTER_HANDLER) {
+            return matterHandlerCapability.cast();
+        }
+        if (capability == net.minecraftforge.common.capabilities.ForgeCapabilities.FLUID_HANDLER) {
+            return net.minecraftforge.common.util.LazyOptional.of(() -> new com.github.mochi7054.fluid.ReplicationFluidHandler(this, getMatterTanks(), side)).cast();
+        }
+        return super.getCapability(capability, side);
     }
 
     @Override
